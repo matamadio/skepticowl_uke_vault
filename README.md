@@ -14,6 +14,7 @@ build sulla cartella vera.
 | --- | --- |
 | `tools/build.py` | Legge la cartella dei `.txt`, li converte in UTF-8 e genera `songs/` + `songs.json` |
 | `artists.json` | Alias degli artisti → nome giusto (es. `"APC": "A Perfect Circle"`) |
+| `song_artists.json` | Artista dei file senza ` - ` nel nome (es. `"Misirlou": "Dick Dale"`) |
 | `index.html`, `app.js`, `style.css` | L'app: elenco + visualizzatore |
 | `sw.js`, `manifest.webmanifest`, `icons/` | App installabile e uso offline |
 | `songs/`, `songs.json` | **Generati** dal build: non modificarli a mano |
@@ -95,8 +96,17 @@ vengono scaricate per l'offline.
 ### Nomi dei file
 
 - `Artista - Titolo.txt` → artista e titolo. Si divide sul primo ` - `
-  (o ` – `, trattino medio); se non c'è il separatore l'artista resta vuoto
-  e la canzone finisce in fondo, sotto "Senza artista".
+  (o ` – `, trattino medio; va bene anche `Artista- Titolo`).
+- Per i file **senza separatore** l'artista si prende da `song_artists.json`
+  (nome del file senza `.txt` → artista; maiuscole e accenti non contano):
+
+  ```json
+  { "Hit the road Jack": "Ray Charles", "Misirlou": "Dick Dale" }
+  ```
+
+  Quelli che restano senza artista finiscono in fondo, sotto "Senza artista",
+  e il build li elenca: aggiungili lì oppure rinomina il file in
+  `Artista - Titolo.txt` (rinominare però azzera preferito e contatori).
 - **Lo stesso artista scritto in modi diversi viene unito da solo**: non
   contano maiuscole, accenti, spazi doppi, punteggiatura, `The` davanti
   (o `, The` in fondo) e `&` al posto di `and`. Per esempio `The Beatles`,
