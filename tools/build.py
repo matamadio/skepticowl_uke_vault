@@ -3,12 +3,14 @@
 
 Uso:
     python tools/build.py "X:\\Dropbox\\Public\\Uke"
+    python tools/build.py SORGENTE --sottocartelle
     python tools/build.py SORGENTE --out CARTELLA_DEL_REPO
 
 Cosa fa:
-  * cerca ricorsivamente i file .txt nella cartella sorgente (tutto il resto,
-    pdf/docx/gp5/midi/immagini/.lnk..., viene ignorato, come le cartelle che
-    iniziano con un punto);
+  * prende i file .txt della cartella sorgente; le sottocartelle sono escluse,
+    a meno di usare --sottocartelle (tutto il resto, pdf/docx/gp5/midi/
+    immagini/.lnk..., viene ignorato, come le cartelle che iniziano con un
+    punto);
   * riconosce la codifica (UTF-16 con BOM, UTF-8 con o senza BOM, altrimenti
     cp1252) e riscrive tutto in UTF-8 senza BOM, lasciando intatti spazi e
     tab: l'unica modifica e' CRLF -> LF;
@@ -141,17 +143,19 @@ def is_inside(path, folder):
         return False
 
 
-def collect(source):
-    found, ignored = [], collections.Counter()
+def collect(source, recursive):
+    found, ignored, skipped_dirs = [], collections.Counter(), []
     for root, dirs, files in os.walk(source):
         dirs[:] = sorted(d for d in dirs if not d.startswith("."))
+        if not recursive:
+            skipped_dirs, dirs[:] = dirs[:], []
         for name in sorted(files):
             ext = os.path.splitext(name)[1].lower()
             if ext == ".txt" and not name.startswith("."):
                 found.append(os.path.join(root, name))
             else:
                 ignored[ext or "(senza estensione)"] += 1
-    return found, ignored
+    return found, ignored, skipped_dirs
 
 
 def main(argv=None):
@@ -160,6 +164,8 @@ def main(argv=None):
     repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("source", help="cartella con i .txt (es. X:\\Dropbox\\Public\\Uke)")
+    ap.add_argument("--sottocartelle", action="store_true",
+                    help="includi anche i .txt delle sottocartelle (normalmente escluse)")
     ap.add_argument("--out", default=repo, help="cartella del sito (predefinita: il repository)")
     args = ap.parse_args(argv)
 
@@ -172,7 +178,7 @@ def main(argv=None):
         sys.exit("La sorgente non puo' stare dentro %s" % songs_dir)
 
     aliases = load_aliases(os.path.join(out, "artists.json"))
-    files, ignored = collect(source)
+    files, ignored, skipped_dirs = collect(source, args.sottocartelle)
 
     if os.path.isdir(songs_dir):
         shutil.rmtree(songs_dir)
@@ -243,6 +249,8 @@ def main(argv=None):
     print("Artisti: %d, senza artista: %d" % (
         len({s["artist"] for s in songs if s["artist"]}),
         sum(1 for s in songs if not s["artist"])))
+    if skipped_dirs:
+        print("Sottocartelle escluse (usa --sottocartelle per includerle): " + ", ".join(skipped_dirs))
     if ignored:
         print("Ignorati: " + ", ".join("%s %d" % kv for kv in ignored.most_common()))
 

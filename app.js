@@ -548,6 +548,8 @@
       o.textContent = folderLabel(f) + ' (' + seen[f] + ')';
       els.folder.appendChild(o);
     });
+    // Con una sola cartella il filtro non serve
+    els.folder.closest('label').hidden = Object.keys(seen).length < 2;
   }
 
   fetch('songs.json', { cache: 'no-cache' }).then(function (r) {

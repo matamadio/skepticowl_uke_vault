@@ -39,9 +39,11 @@ Serve Python 3.9 o più recente (solo libreria standard) e Git.
    ```
 
    Il build:
-   - cerca i `.txt` in tutte le sottocartelle (`cazzate/`, `canzonieri/`, ...)
-     e ignora tutto il resto (pdf, docx, gp5, midi, immagini, `.lnk` come le
-     scalette in `JDuetti/`) e le cartelle che iniziano con un punto;
+   - prende solo i `.txt` della cartella `Uke`: le sottocartelle
+     (`cazzate/`, `canzonieri/`, `midi/`, `JDuetti/`, ...) sono escluse e il
+     riepilogo le elenca. Per includerle aggiungi `--sottocartelle`:
+     `python tools/build.py "X:\Dropbox\Public\Uke" --sottocartelle`;
+   - ignora tutto ciò che non è `.txt` (pdf, docx, gp5, midi, immagini, `.lnk`);
    - riconosce la codifica (UTF-16 con BOM, UTF-8 con o senza BOM,
      altrimenti cp1252) e salva tutto in UTF-8; spazi e tab restano identici,
      cambia solo il fine riga (CRLF → LF);
@@ -126,7 +128,8 @@ vengono scaricate per l'offline.
 - **Elenco**: ricerca mentre scrivi (non distingue maiuscole e accenti) su
   artista e titolo; con *cerca nel testo* cerca anche dentro le canzoni.
   Ordine per artista (raggruppato), titolo, ultimo utilizzo o più cliccate.
-  Filtro per cartella e *solo preferiti*. La stellina segna i preferiti.
+  Filtro *solo preferiti* (e per cartella, che compare solo se il build ha
+  incluso le sottocartelle). La stellina segna i preferiti.
 - **Visualizzatore**: come Notepad, carattere monospazio, tab a 8 colonne,
   mai a capo automatico.
   - *Adatta* (predefinita su telefono): riduce il carattere finché la riga più
