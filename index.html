@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Skepticowl's song vault</title>
+<meta name="description" content="Tab e accordi per ukulele">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1a18" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<section id="listView">
+  <header class="sticky">
+    <div class="titlebar">
+      <h1>Skepticowl's song vault</h1>
+      <button id="menuBtn" class="icon" type="button" aria-label="Menu" title="Menu">&#8942;</button>
+    </div>
+    <input id="q" type="search" placeholder="Cerca artista o titolo…" autocomplete="off" spellcheck="false" aria-label="Cerca">
+  </header>
+  <div class="listhead">
+    <div class="filters">
+      <label class="check"><input id="inText" type="checkbox"> cerca nel testo</label>
+      <button id="favOnly" class="chip" type="button" aria-pressed="false">&#9733; solo preferiti</button>
+    </div>
+    <div class="filters">
+      <label class="sel">Ordina
+        <select id="sort">
+          <option value="artist">per artista</option>
+          <option value="title">per titolo</option>
+          <option value="recent">ultimo utilizzo</option>
+          <option value="plays">più cliccate</option>
+        </select>
+      </label>
+      <label class="sel">Cartella
+        <select id="folder"><option value="*">tutte</option></select>
+      </label>
+    </div>
+    <div id="count" class="count" aria-live="polite"></div>
+  </div>
+  <main id="list" class="list"></main>
+</section>
+
+<section id="viewer" hidden>
+  <header class="vbar">
+    <div class="vrow">
+      <button id="backBtn" class="icon" type="button" aria-label="Indietro" title="Indietro (Esc)">&#8592;</button>
+      <button id="vStar" class="star" type="button" aria-label="Preferito" title="Preferito">&#9734;</button>
+      <div class="vtitle"><span id="vTitle"></span><span id="vArtist" class="vartist"></span></div>
+    </div>
+    <div class="vrow tools">
+      <div class="seg" role="group" aria-label="Modalità">
+        <button id="modeFit" type="button" title="Riduce il carattere finché la riga più lunga entra">Adatta</button>
+        <button id="modeOrig" type="button" title="Dimensione normale, scorrimento orizzontale">Originale</button>
+      </div>
+      <div class="seg" role="group" aria-label="Carattere">
+        <button id="fontDown" type="button" title="Carattere più piccolo (-)">A&minus;</button>
+        <span id="fontSize" class="fsize"></span>
+        <button id="fontUp" type="button" title="Carattere più grande (+)">A+</button>
+      </div>
+      <div class="seg" role="group" aria-label="Scorrimento automatico">
+        <button id="scrollBtn" type="button" title="Scorrimento automatico (S)">&#9654;</button>
+        <input id="speed" type="range" min="1" max="20" step="1" aria-label="Velocità">
+      </div>
+    </div>
+  </header>
+  <div id="scroller" class="scroller"><pre id="text"></pre></div>
+</section>
+
+<dialog id="menu">
+  <form method="dialog">
+    <h2>Skepticowl's song vault</h2>
+    <p id="info" class="muted"></p>
+    <p id="offline" class="muted"></p>
+    <h3>Stato su questo dispositivo</h3>
+    <p class="muted">Preferiti, contatori, ultimo utilizzo e impostazioni restano solo in questo browser. Esportali per spostarli su un altro dispositivo.</p>
+    <div class="buttons">
+      <button id="exportBtn" type="button">Esporta JSON</button>
+      <button id="importBtn" type="button">Importa JSON</button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+    </div>
+    <p id="menuMsg" class="muted" aria-live="polite"></p>
+    <div class="buttons end"><button value="close">Chiudi</button></div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

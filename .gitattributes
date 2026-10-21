@@ -1,0 +1,4 @@
+* text=auto eol=lf
+# canzoni generate e esempi: byte esatti, niente conversioni di fine riga
+songs/** -text
+tools/esempi/** -text
