@@ -1,0 +1,7 @@
+Canzone di prova con accentate (file salvato in cp1252)
+
+C           G          Am        F
+Città di mare, caffè già freddo, perché
+C            G            F    C
+più ci penso e più non so più cos'è
+Andrè, Niccolò, Mosè: òàùèé ÀÈÌÒÙ «virgolette» – trattino

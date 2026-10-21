@@ -1,0 +1,6 @@
+Greensleeves (tradizionale inglese) - file UTF-16LE con BOM
+
+Am        C          G           Em
+Alas, my love, you do me wrong,
+Am         F          E7
+To cast me off discourteously.
