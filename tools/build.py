@@ -32,7 +32,8 @@ import shutil
 import sys
 import unicodedata
 
-SEPARATORS = (" - ", " \u2013 ")  # trattino e trattino medio (en dash)
+# " - " o " – " (trattino medio); accettato anche "Artista- Titolo"
+SEPARATOR = re.compile(r"\s+[-\u2013]\s+|(?<=\S)[-\u2013]\s+")
 
 
 def _latin1_fallback(err):
@@ -68,15 +69,10 @@ def decode(data):
 
 def split_name(stem):
     """'Artista - Titolo' -> ('Artista', 'Titolo'); senza separatore artista vuoto."""
-    best = None
-    for sep in SEPARATORS:
-        i = stem.find(sep)
-        if i > 0 and (best is None or i < best[0]):
-            best = (i, sep)
-    if best is None:
+    m = SEPARATOR.search(stem)
+    if not m or m.start() == 0:
         return "", stem.strip()
-    i, sep = best
-    artist, title = stem[:i].strip(), stem[i + len(sep):].strip()
+    artist, title = stem[:m.start()].strip(), stem[m.end():].strip()
     if not title:
         return "", stem.strip()
     return artist, title
@@ -130,6 +126,20 @@ def load_aliases(path):
     }
 
 
+def load_song_artists(path):
+    """song_artists.json: nome del file (senza .txt) -> artista, per i file
+    senza " - " nel nome. Maiuscole e accenti non contano."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        raw = json.load(f)
+    return {
+        fold(k.strip()): clean_artist(v)
+        for k, v in raw.items()
+        if not k.startswith("_") and isinstance(v, str)
+    }
+
+
 def song_id(rel_path):
     """Id stabile: dipende solo dal percorso relativo (senza maiuscole)."""
     return hashlib.sha1(rel_path.casefold().encode("utf-8")).hexdigest()[:10]
@@ -178,6 +188,7 @@ def main(argv=None):
         sys.exit("La sorgente non puo' stare dentro %s" % songs_dir)
 
     aliases = load_aliases(os.path.join(out, "artists.json"))
+    song_artists = load_song_artists(os.path.join(out, "song_artists.json"))
     files, ignored, skipped_dirs = collect(source, args.sottocartelle)
 
     if os.path.isdir(songs_dir):
@@ -203,8 +214,9 @@ def main(argv=None):
         ids[sid] = rel
 
         folder = rel.rpartition("/")[0]
-        artist, title = split_name(os.path.splitext(rel.rpartition("/")[2])[0])
-        artist = clean_artist(artist)
+        stem = os.path.splitext(rel.rpartition("/")[2])[0]
+        artist, title = split_name(stem)
+        artist = clean_artist(artist) or song_artists.get(fold(stem.strip()), "")
         artist = aliases.get(artist_key(artist), artist)
         mtime = datetime.datetime.fromtimestamp(os.stat(src).st_mtime, datetime.timezone.utc)
         songs.append({
@@ -253,6 +265,12 @@ def main(argv=None):
         print("Sottocartelle escluse (usa --sottocartelle per includerle): " + ", ".join(skipped_dirs))
     if ignored:
         print("Ignorati: " + ", ".join("%s %d" % kv for kv in ignored.most_common()))
+
+    missing = sorted((s["path"] for s in songs if not s["artist"]), key=str.casefold)
+    if missing:
+        print("\nSenza artista (aggiungili in song_artists.json o rinomina in 'Artista - Titolo.txt'):")
+        for p in missing:
+            print("  " + p)
 
     merged = [(canonical[k], sorted(set(c) - {canonical[k]}))
               for k, c in spellings.items() if len(c) > 1]
