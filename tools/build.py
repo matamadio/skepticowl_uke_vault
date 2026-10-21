@@ -21,6 +21,7 @@ import argparse
 import codecs
 import collections
 import datetime
+import difflib
 import hashlib
 import json
 import os
@@ -91,13 +92,37 @@ def search_text(text):
     return " ".join(re.sub(r"[^\w']+", " ", fold(text)).split())
 
 
+def artist_key(name):
+    """Chiave per riconoscere lo stesso artista scritto in modi diversi:
+    maiuscole, accenti, spazi, punteggiatura, "The" davanti (o ", The" in
+    fondo) e "&" al posto di "and" non contano."""
+    k = fold(name).replace("&", " and ")
+    k = re.sub(r"^\s*the\s+|,\s*the\s*$", "", k)
+    return re.sub(r"[\W_]+", "", k) or fold(name)
+
+
+def clean_artist(name):
+    """Spazi doppi, tab e spazi ai lati via."""
+    return " ".join(name.split())
+
+
+def pick_spelling(counter):
+    """Grafia da mostrare: meglio non tutta minuscola e senza ", The" in fondo;
+    poi la piu' usata; a parita' quella con accenti, poi la piu' lunga."""
+    def rank(kv):
+        name, n = kv
+        return (name == name.lower(), bool(re.search(r",\s*the\s*$", name, re.I)),
+                -n, name.isascii(), -len(name), name)
+    return min(counter.items(), key=rank)[0]
+
+
 def load_aliases(path):
     if not os.path.exists(path):
         return {}
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
     return {
-        k.strip().casefold(): v.strip()
+        artist_key(k): clean_artist(v)
         for k, v in raw.items()
         if not k.startswith("_") and isinstance(v, str)
     }
@@ -173,7 +198,8 @@ def main(argv=None):
 
         folder = rel.rpartition("/")[0]
         artist, title = split_name(os.path.splitext(rel.rpartition("/")[2])[0])
-        artist = aliases.get(artist.casefold(), artist)
+        artist = clean_artist(artist)
+        artist = aliases.get(artist_key(artist), artist)
         mtime = datetime.datetime.fromtimestamp(os.stat(src).st_mtime, datetime.timezone.utc)
         songs.append({
             "id": sid,
@@ -186,15 +212,15 @@ def main(argv=None):
             "text": search_text(text),
         })
 
-    # Stessi artisti scritti con maiuscole diverse: vince la grafia piu' usata
+    # Stesso artista scritto in modi diversi: si unisce da solo
     spellings = collections.defaultdict(collections.Counter)
     for s in songs:
         if s["artist"]:
-            spellings[s["artist"].casefold()][s["artist"]] += 1
-    canonical = {k: sorted(c.items(), key=lambda kv: (-kv[1], kv[0]))[0][0] for k, c in spellings.items()}
+            spellings[artist_key(s["artist"])][s["artist"]] += 1
+    canonical = {k: pick_spelling(c) for k, c in spellings.items()}
     for s in songs:
         if s["artist"]:
-            s["artist"] = canonical[s["artist"].casefold()]
+            s["artist"] = canonical[artist_key(s["artist"])]
 
     songs.sort(key=lambda s: s["path"].casefold())
     version = hashlib.sha1(
@@ -220,17 +246,25 @@ def main(argv=None):
     if ignored:
         print("Ignorati: " + ", ".join("%s %d" % kv for kv in ignored.most_common()))
 
-    # Possibili doppioni da sistemare in artists.json
-    similar = collections.defaultdict(set)
-    for s in songs:
-        if s["artist"]:
-            key = re.sub(r"[^a-z0-9]", "", re.sub(r"^the\s+", "", fold(s["artist"])))
-            similar[key].add(s["artist"])
-    dups = [sorted(v) for v in similar.values() if len(v) > 1]
-    if dups:
-        print("\nArtisti forse duplicati (aggiungi un alias in artists.json):")
-        for names in sorted(dups):
-            print("  " + "  |  ".join(names))
+    merged = [(canonical[k], sorted(set(c) - {canonical[k]}))
+              for k, c in spellings.items() if len(c) > 1]
+    if merged:
+        print("\nArtisti unificati automaticamente:")
+        for name, others in sorted(merged, key=lambda m: m[0].casefold()):
+            print("  %s  <-  %s" % (name, "  |  ".join(others)))
+
+    # Quasi uguali (refusi?): non si uniscono da soli perche' potrebbero
+    # essere artisti diversi (es. Blur/Blue). Se lo sono, alias in artists.json.
+    keys = sorted(k for k in canonical if len(k) >= 5)
+    typos = []
+    for i, a in enumerate(keys):
+        for b in keys[i + 1:]:
+            if abs(len(a) - len(b)) <= 2 and difflib.SequenceMatcher(None, a, b).ratio() >= 0.9:
+                typos.append((canonical[a], canonical[b]))
+    if typos:
+        print("\nArtisti quasi uguali, forse refusi (se si', aggiungi un alias in artists.json):")
+        for a, b in typos:
+            print("  %s  |  %s" % (a, b))
     print("\nVersione: %s" % version)
 
 

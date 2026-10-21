@@ -95,10 +95,19 @@ vengono scaricate per l'offline.
 - `Artista - Titolo.txt` → artista e titolo. Si divide sul primo ` - `
   (o ` – `, trattino medio); se non c'è il separatore l'artista resta vuoto
   e la canzone finisce in fondo, sotto "Senza artista".
-- Lo stesso artista scritto con maiuscole diverse viene unito da solo
-  (vince la grafia più usata).
-- Per gli altri casi aggiungi un alias in `artists.json` (le chiavi non
-  badano alle maiuscole), poi rilancia il build:
+- **Lo stesso artista scritto in modi diversi viene unito da solo**: non
+  contano maiuscole, accenti, spazi doppi, punteggiatura, `The` davanti
+  (o `, The` in fondo) e `&` al posto di `and`. Per esempio `The Beatles`,
+  `beatles`, `Beatles, The` e `Beatles` diventano un solo artista, e così
+  `Fabrizio De Andrè` / `Fabrizio de Andre` o `Guns N' Roses` / `Guns N Roses`.
+  Come nome viene mostrata la grafia più usata, evitando quelle tutte
+  minuscole o con `, The` in fondo. Il build stampa l'elenco di cosa ha unito.
+- I nomi **quasi** uguali (refusi come `Roling Stones` / `Rolling Stones`)
+  invece non vengono uniti da soli, perché potrebbero essere artisti
+  diversi (`Blur` / `Blue`): il build li elenca alla fine. Se sono lo stesso
+  artista, e per le abbreviazioni come `APC`, aggiungi un alias in
+  `artists.json` (anche le chiavi degli alias ignorano maiuscole, accenti,
+  spazi e `The`), poi rilancia il build:
 
   ```json
   {
