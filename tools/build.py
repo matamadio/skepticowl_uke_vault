@@ -108,6 +108,14 @@ def song_id(rel_path):
     return hashlib.sha1(rel_path.casefold().encode("utf-8")).hexdigest()[:10]
 
 
+def is_inside(path, folder):
+    """True se path e' folder o sta dentro folder (dischi diversi su Windows: no)."""
+    try:
+        return os.path.commonpath([os.path.normcase(path), os.path.normcase(folder)]) == os.path.normcase(folder)
+    except ValueError:  # es. X:\ e C:\ su Windows
+        return False
+
+
 def collect(source):
     found, ignored = [], collections.Counter()
     for root, dirs, files in os.walk(source):
@@ -135,7 +143,7 @@ def main(argv=None):
     songs_dir = os.path.join(out, "songs")
     if not os.path.isdir(source):
         sys.exit("Cartella sorgente non trovata: %s" % source)
-    if os.path.commonpath([source, songs_dir]) == songs_dir:
+    if is_inside(source, songs_dir):
         sys.exit("La sorgente non puo' stare dentro %s" % songs_dir)
 
     aliases = load_aliases(os.path.join(out, "artists.json"))
