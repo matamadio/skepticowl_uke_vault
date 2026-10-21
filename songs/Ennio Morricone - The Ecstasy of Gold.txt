@@ -1,0 +1,53 @@
+Ennio Morricone - The Ecstasy of Gold – The Good, the Bad, and the Ugly
+
+(Em bass) – B-C-A-E repeat.
+
+Notes about the beginning: On the first time through [1], the bass plays under B-C-
+A-E with Am, and then it plays under A-B-G-D with G.
+
+[1]: Am C D F (sometimes G before the next sequence)
+[2]: Am G C E (sometimes the bass goes to D, C, B before the repeat of the first sequence)
+
+[1]: Am C D F (sometimes G before the next sequence)
+[2]: Am G C E (sometimes the bass goes to D, C, B before the repeat of the first sequence) E7
+
+[3]: Am C D F C E7 Am D
+
+[1]: Am C D F (sometimes G before the next sequence)
+[4]: Am C D F F
+
+[5]: notes E-D-A repeat/variation over Am.
+
+[1]: Am C D F (sometimes G before the next sequence)
+[2]: Am G C E (sometimes the bass goes to D, C, B before the repeat of the first sequence) E7
+
+[6]: 2:25. Am C D F D F C E7 Am D
+
+[7]: (Right-hand plays E-D-A) Am C D F
+
+---------------------------------------------
+
+(Am bass) – E-F-D-A repeat.
+
+Notes about the beginning: On the first time through [1], the bass plays under E-F-
+D-A with Dm, and then it plays under D-E-C-G with C.
+
+[1]: Dm  F  G  A# (sometimes C before the next sequence)
+[2]: Dm  C  F  A (sometimes the bass goes to G, F, E before the repeat of the first sequence)
+
+[1]: Dm  F  G  A# (sometimes C before the next sequence)
+[2]: Dm  C  F  A (sometimes the bass goes to G, F, E before the repeat of the first sequence) A7
+
+[3]: Dm  F  G  A# F  A7  Dm  G
+
+[1]: Dm  F  G  A# (sometimes C before the next sequence)
+[4]: Dm  F  G  A# A#
+
+[5]: notes A-G-D repeat/variation over Dm.
+
+[1]: Dm  F  G  A# (sometimes C before the next sequence)
+[2]: Dm  C  F  A (sometimes the bass goes to G, F, E before the repeat of the first sequence) A7
+
+[6]: 2:25. Dm  F  G  A# G  A# F  A7  Dm  G
+
+[7]: (Right-hand plays A-G-D) Dm  F  G  A#

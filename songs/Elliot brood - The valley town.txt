@@ -1,0 +1,96 @@
+Elliot brood - The valley town
+Tuning -1 (110 bpm)
+
+A|-777-555-333-111-333-333-000-333-03030-3/7-|
+E|---------------------111-111-111-11111-----|
+
+When the wind bares the trees
+and them clouds are pushin' east,
+come on inside,
+dry your clothes,
+warm your bones,
+get a glass and set yourself at ease.
+
+when the dust in your room
+covers all that you do
+get yourself outside
+mornin train pull it away
+hear the whistle play and set yourself at ease.
+
+theres a house by the hill,
+how i long for it still,
+my home sweet home,
+home sweet home, (-2 measures)
+home, home, home, home.
+home, home, home, home.
+
+-----------------------------------------
+
+C*:        0007
+Cadd9:     0005
+C:         0003
+C7:        0001
+Fsus2:     0013
+Fsus4add9: 0011
+C6:        0000
+ 
+[Intro] x2
+C* Cadd9 C C7
+Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2
+ 
+[Verse 1]
+          C*             Cadd9
+When the wind bares the trees
+           C                 C7
+And them clouds are pushin' east,
+         Fsus2    Fsus4add9
+Come on inside,
+Fsus2     Fsus4add9
+Dry your clothes,
+Fsus2     Fsus4add9
+Warm your bones,
+Fsus2          Fsus4add9        C*   Cadd9 C C7 Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2
+Get a glass and set yourself at ease.
+
+         C*            Cadd9
+When the dust in your room
+        C          C7
+Covers all that you do
+               Fsus2 Fsus4add9
+Get yourself outside
+Fsus2    Fsus4add9  Fsus2   Fsus4add9
+Mornin train        pull it away
+Fsus2                   Fsus4add9         C*  Cadd9 C C7 Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2
+Hear the whistle play and set yourself at ease.
+ 
+[Bridge]
+Cadd9 C* Cadd9 C* Cadd9 C* Fsus2 C6  x4
+ 
+C* Cadd9 C C6 C7 C6  x4
+Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2
+ 
+[Verse 2]
+          C*          Cadd9
+Theres a house by the hill,
+       C           C7
+How i long for her still,
+              Fsus2  Fsus4add9 Fsus2
+My home sweet home,
+Fsus4add9    C*   Cadd9 C C7
+Home sweet home,
+Fsus2 Fsus4add9
+Home,
+Fsus2 Fsus4add9
+Home,
+Fsus2 Fsus4add9
+Home,
+Fsus2 Fsus4add9 C* Cadd9 C C7
+Home.
+Fsus2 Fsus4add9
+Home,
+Fsus2 Fsus4add9
+Home,
+Fsus2 Fsus4add9
+Home,
+Fsus2 Fsus4add9 C* Cadd9 C C7 Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2 Fsus4add9 Fsus2
+Home.

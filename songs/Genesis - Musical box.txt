@@ -1,0 +1,135 @@
+Genesis - Musical box
+
+[Intro]
+  F#    F# Bm F# G#m7   G#m7 F# Bm F#    F# Bm F# G#m7
+  1 + 2 + 3 + 4 +  1 + 2 + 3 + 4 +  1 + 2 + 3 + 4 +  1 + 2 + 3 + 4 +
+e|1-------1-2-1-0-|--------0-1-2-1-|--------1-2-1-0|----------------|
+B|2-------2-2-2-4-|--------4-2-2-2-|--------2-2-2-4|----------------|
+G|1-------1-2-1-2-|--------2-1-2-1-|--------1-2-1-2|----------------|
+D|3-------3-4-3-4-|--------4-3-4-3-|--------3-4-3-4|----------------|
+ 
+[Verse]
+Bm               F#
+Play me old king cole
+     Bm               F#
+That I may join with you,
+         A                  D
+All your hearts now seem so far from me
+                   A		A|-----0-4-|
+It hardly seems to matter now.	E|-2-4-----|
+        Bm                  F#
+And the nurse will tell you lies
+     Bm                  F#
+Of a kingdom beyond the skies.
+         A                D
+But I am lost within this half-world,
+                   A
+It hardly seems to matter now.
+ 
+[Chorus]
+E		  C|-8-9-11-9-8---8---|
+Play me my song.  G|------------11--9-|
+F#
+Here it comes again.
+E
+Play me my song.
+F#
+Here it comes again.
+ 
+[Instrumental] (x2)
+F#m F#m F#m G
+F#m F#m F#m Em
+F#m F#m F#m G
+ 
+[Bridge]
+       F#m
+Just a little bit,
+       F#m
+Just a little bit more time,
+F#m
+Time left to live out my life.
+            Am
+la la la la la la la la la la
+ 
+[Instrumental]
+D G D G D
+Am C#m Am C#m Am  A
+ 
+[Chorus]
+E
+Play me my song.
+F#
+Here it comes again.
+E
+Play me my song.
+F#
+Here it comes again.
+ 
+[Solo]
+E F#  (x6)  D E (x4)
+E F#  (x4)  D E (x4)   D
+E F#  (x4)  D E (x4)   D F#m
+ 
+[Verse]
+F#m                 B
+Old king cole was a merry old soul,
+      D                  F#m
+And a merry old soul was he.
+      F#m
+So he called for his pipe, 
+       B
+And he called for his bowl,
+       D                       F#m
+And he called for his fiddlers three.
+        F#m         E
+But the clock, tick-tock,
+         D
+On the mantlepiece -
+      D
+And I want, and I feel, and I know, and I touch,
+E    F#
+Her warmth...
+ 
+[Instrumental]
+E F# (x4)
+E D F#
+E F# (x4)
+E D F#
+ 
+[Verse]
+D#m
+She's a lady, shes got time,
+F#                    E                            F#
+ Brush back your hair, and let me get to know your face.
+D#m
+Shes a lady, she is mine.
+F#                    E                            F#
+ Brush back your hair, and let me get to know your flesh.
+ 
+[Instrumental]
+F# B C# F#   B C#
+ 
+[Verse]
+F#       D#m     Bbm       G#m
+Ive been waiting here for so long
+             F#
+And all this time has passed me by
+B                             F#
+It doesn't seem to matter now
+F#    B           C#        F#              B C#
+  You stand there with your fixed expression
+F#      D#m            Bbm      G#m
+Casting doubt on all I have to say.
+             F#        E     F#
+Why dont you touch me, touch me,
+E    F#   E         F# E F# E F#
+Why dont you touch me, touch me,
+         B      ( E F# E B E F#     E F# E B E B ) - repeat several times
+Touch me now, now, now, now, now...
+
+[Outro]
+E F# E B E B
+B C# F#
+B C# F#
+F# C# F# C# (x4)
+F#  C#  F#  F# C#    F#
