@@ -1,6 +1,7 @@
 {
-  "_nota": "sezioni: sottocartelle di Uke i cui .txt (non le loro sottocartelle) vengono mostrati in una sezione a parte sotto l'elenco principale. canzonieri: sottocartella da cui prendere i PDF per la pagina Canzonieri. canzonieri_esclusi: nomi dei PDF da non pubblicare (con o senza .pdf, maiuscole indifferenti, accettano * e ?).",
+  "_nota": "sezioni_nascoste: sezioni che nell'app restano nascoste finché non si sbloccano (5 tocchi veloci sul titolo). sezioni: sottocartelle di Uke i cui .txt (non le loro sottocartelle) vengono mostrati in una sezione a parte sotto l'elenco principale. canzonieri: sottocartella da cui prendere i PDF per la pagina Canzonieri. canzonieri_esclusi: nomi dei PDF da non pubblicare (con o senza .pdf, maiuscole indifferenti, accettano * e ?).",
   "sezioni": ["cazzate"],
+  "sezioni_nascoste": ["cazzate"],
   "canzonieri": "canzonieri",
   "canzonieri_esclusi": []
 }
