@@ -175,6 +175,14 @@ vengono scaricate per l'offline.
 - **Canzonieri**: la scheda in alto apre l'elenco dei PDF (con ricerca); un
   tocco li apre nel lettore PDF del browser. Quelli aperti restano
   disponibili offline.
+- **Playlist**: scheda *Playlist* in alto. *+ Nuova playlist* chiede un nome;
+  nella playlist la casella di ricerca serve per trovare le canzoni da
+  aggiungere (+). L'ordine si cambia trascinando la maniglia ⋮⋮ o con ▲/▼;
+  ✕ toglie una canzone, ✎ rinomina, il cestino elimina la playlist. Dal
+  visualizzatore il pulsante ☰+ aggiunge la canzone aperta a una o più
+  playlist. Aprendo una canzone da una playlist compare la barra ◀ n/N ▶
+  per passare alla precedente/successiva (su PC anche `P`/`N`). Le playlist
+  restano sul dispositivo e viaggiano con *Esporta/Importa JSON*.
 - **Scorrimento rapido su telefono**: mentre scorri compare una maniglia sul
   bordo destro; trascinala per saltare velocemente in qualsiasi punto.
 - **Visualizzatore**: come Notepad, carattere monospazio, tab a 8 colonne,
@@ -190,7 +198,7 @@ vengono scaricate per l'offline.
     `F` cambia modalità, `S` scorrimento automatico.
 - **Menu ⋮**: informazioni, stato dell'offline ed **Esporta/Importa JSON**.
 
-Preferiti, contatori, ultimo utilizzo e impostazioni restano **solo nel
+Preferiti, playlist, contatori, ultimo utilizzo e impostazioni restano **solo nel
 browser di quel dispositivo** (localStorage). Per portarli da un dispositivo
 all'altro: *Esporta JSON* su uno, *Importa JSON* sull'altro (l'import unisce:
 somma i preferiti e tiene i valori più alti). Cancellare i dati del sito dal
