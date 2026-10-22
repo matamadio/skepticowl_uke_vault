@@ -1,0 +1,24 @@
+Gsus: 0032
+C5:0033
+D*: 7655
+Fsus: 5500
+
+
+G   Am   Em  G  Gsus     X2
+
+C   G  Am   D
+
+Rit.  Am  C5   D Dsus
+        Am  C5   D D*
+
+  Bridge
+Am   C  G   D  Dsus
+
+Rit.
+
+    Outro: 
+Am  G  D Dsus
+Am  G  Fsus  A
+
+
+A   Em7
