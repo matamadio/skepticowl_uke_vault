@@ -91,14 +91,14 @@
     var inText = els.inText.checked;
     var favOnly = els.favOnly.getAttribute('aria-pressed') === 'true';
     var folder = els.folder.value;
-    var tag = setting('tag', '');
+    var sel = selectedTags();
     var out = [];
     var list = visibleSongs();
     for (var i = 0; i < list.length; i++) {
       var s = list[i];
       if (favOnly && !state.favs[s.id]) continue;
       if (folder !== '*' && s.folder !== folder) continue;
-      if (tag && (!s.tags || s.tags.indexOf(tag) === -1)) continue;
+      if (sel.length && !hasTags(s, sel)) continue;
       var hitText = false, ok = true;
       for (var w = 0; w < words.length; w++) {
         if (s._key.indexOf(words[w]) !== -1) continue;
@@ -147,23 +147,48 @@
   }
 
   // ---------- Tag (da tags.json, applicati da build.py) ----------
+  // Più tag insieme si combinano in AND: es. Demenziale + Italiani.
   var tagNames = [];
+  function selectedTags() {
+    var v = setting('tags', null);
+    if (!Array.isArray(v)) v = setting('tag', '') ? [setting('tag', '')] : []; // vecchia impostazione a tag singolo
+    return v;
+  }
+  function hasTags(s, list) {
+    if (!s.tags) return false;
+    for (var i = 0; i < list.length; i++) if (s.tags.indexOf(list[i]) === -1) return false;
+    return true;
+  }
   function renderTagChips() {
-    var box = $('tagChips'), cur = setting('tag', ''), count = {};
-    visibleSongs().forEach(function (s) { (s.tags || []).forEach(function (t) { count[t] = (count[t] || 0) + 1; }); });
-    var names = tagNames.filter(function (t) { return count[t]; });
-    if (cur && !count[cur]) { cur = ''; setSetting('tag', ''); } // es. tag solo nella sezione nascosta
-    box.hidden = !names.length;
-    box.innerHTML = names.map(function (t) {
-      return '<button type="button" class="chip" data-tag="' + escapeHtml(t) + '" aria-pressed="' + (t === cur) + '">' +
-        escapeHtml(t) + ' <span class="n">' + count[t] + '</span></button>';
-    }).join('');
+    var box = $('tagChips'), visible = visibleSongs(), all = {}, count = {};
+    visible.forEach(function (s) { (s.tags || []).forEach(function (t) { all[t] = 1; }); });
+    // tag non più disponibili (es. solo nella sezione nascosta): via dalla selezione
+    var sel = selectedTags().filter(function (t) { return all[t]; });
+    if (sel.length !== selectedTags().length) setSetting('tags', sel);
+    // per ogni tag: quante canzoni resterebbero aggiungendolo alla selezione
+    visible.forEach(function (s) {
+      if (!hasTags(s, sel)) return;
+      (s.tags || []).forEach(function (t) { count[t] = (count[t] || 0) + 1; });
+    });
+    var names = tagNames.filter(function (t) { return sel.indexOf(t) !== -1 || count[t]; });
+    box.hidden = !tagNames.some(function (t) { return all[t]; });
+    box.innerHTML = (sel.length ? '<button type="button" class="chip clear" data-tag-clear aria-label="Togli tutti i tag">&#10005;</button>' : '') +
+      names.map(function (t) {
+        var on = sel.indexOf(t) !== -1;
+        return '<button type="button" class="chip" data-tag="' + escapeHtml(t) + '" aria-pressed="' + on + '">' +
+          escapeHtml(t) + (on ? '' : ' <span class="n">' + count[t] + '</span>') + '</button>';
+      }).join('');
   }
   $('tagChips').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-tag]');
+    var b = e.target.closest('[data-tag],[data-tag-clear]');
     if (!b) return;
-    var t = b.getAttribute('data-tag');
-    setSetting('tag', setting('tag', '') === t ? '' : t);
+    var sel = selectedTags().slice();
+    if (b.hasAttribute('data-tag-clear')) sel = [];
+    else {
+      var t = b.getAttribute('data-tag'), i = sel.indexOf(t);
+      if (i === -1) sel.push(t); else sel.splice(i, 1);
+    }
+    setSetting('tags', sel);
     render();
     window.scrollTo(0, 0);
   });

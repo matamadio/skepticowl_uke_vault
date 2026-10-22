@@ -449,3 +449,4 @@ svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
   .tagchips { flex-wrap: wrap; overflow-x: visible; margin: 6px 0 2px; padding: 2px 0 4px; }
 }
 .song .m .tg { color: var(--accent); opacity: .8; }
+.tagchips .chip.clear { padding: 3px 10px; color: var(--accent); border-color: var(--accent); }
