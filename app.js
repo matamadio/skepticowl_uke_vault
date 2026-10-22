@@ -120,6 +120,7 @@
     if (page === 'books') { renderBooks(); return; }
     if (page === 'playlists') { renderPlaylists(); return; }
     if (page === 'playlist') { renderPlaylist(); return; }
+    if (page === 'shared') { renderShared(); return; }
     var items = filtered();
     var sort = els.sort.value;
     var html = [];
@@ -309,7 +310,7 @@
     if (changed && (p === 'playlist' || page === 'playlist')) els.q.value = '';
     page = p;
     openPl = plId || null;
-    var tab = p === 'playlist' ? 'playlists' : p;
+    var tab = p === 'playlist' || p === 'shared' ? 'playlists' : p;
     document.querySelectorAll('.tabs a').forEach(function (a) {
       if (a.getAttribute('data-page') === tab) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
@@ -318,7 +319,8 @@
     els.q.placeholder = {
       books: 'Cerca canzoniere…',
       playlists: 'Cerca playlist…',
-      playlist: 'Cerca canzoni da aggiungere…'
+      playlist: 'Cerca canzoni da aggiungere…',
+      shared: 'Cerca…'
     }[p] || 'Cerca artista o titolo…';
     if (changed) { render(); window.scrollTo(0, 0); updateHeadHeight(); }
   }
@@ -367,6 +369,7 @@
     var html = ['<div class="plhead"><a class="icon" href="#/playlist" aria-label="Tutte le playlist">&#8592;</a>' +
       '<h2>' + escapeHtml(p.name) + '</h2>' +
       '<button type="button" class="icon" data-pl-rename title="Rinomina" aria-label="Rinomina">&#9998;</button>' +
+      '<button type="button" class="icon" data-pl-share title="Condividi" aria-label="Condividi">' + SHARE_ICON + '</button>' +
       '<button type="button" class="icon" data-pl-delete title="Elimina playlist" aria-label="Elimina playlist">&#128465;</button></div>'];
     if (p.songs.length) {
       html.push('<div class="plsongs" id="plSongs">');
@@ -405,6 +408,66 @@
     els.count.textContent = plCount(p.songs.length);
   }
 
+  // ---------- Condivisione ----------
+  // Le playlist stanno solo nel dispositivo: per condividerle si crea un link
+  // che contiene nome e canzoni (#/condivisa?n=Nome&s=id.id.id). Chi lo apre
+  // vede la playlist e può salvarla tra le sue.
+  var SHARE_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/>' +
+    '<circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>';
+  var shared = null; // {name, songs} della playlist condivisa aperta
+
+  function shareUrl(p) {
+    return location.href.split('#')[0] + '#/condivisa?n=' + encodeURIComponent(p.name) + '&s=' + p.songs.join('.');
+  }
+  function sharePl(p) {
+    var url = shareUrl(p);
+    if (navigator.share) {
+      navigator.share({ title: p.name + " · Skepticowl's song vault", url: url }).catch(function () {});
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { toast('Link della playlist copiato'); },
+        function () { window.prompt('Copia il link della playlist', url); });
+    } else {
+      window.prompt('Copia il link della playlist', url);
+    }
+  }
+  function parseShared(hash) {
+    var q = hash.split('?')[1] || '', out = { name: 'Playlist condivisa', songs: [] };
+    q.split('&').forEach(function (kv) {
+      var i = kv.indexOf('='), k = kv.slice(0, i), v = kv.slice(i + 1);
+      try { v = decodeURIComponent(v); } catch (e) { /* lascia com'è */ }
+      if (k === 'n' && v) out.name = v.slice(0, 80);
+      if (k === 's') out.songs = v.split('.').filter(function (x) { return /^[\w-]+$/.test(x); });
+    });
+    return out;
+  }
+  function renderShared() {
+    if (!shared) return;
+    var html = ['<div class="plhead"><a class="icon" href="#/playlist" aria-label="Tutte le playlist">&#8592;</a>' +
+      '<h2>' + escapeHtml(shared.name) + '</h2></div>',
+      '<div class="pltools"><button type="button" class="primary" data-pl-save>Salva tra le mie playlist</button></div>'];
+    shared.songs.forEach(function (sid, i) {
+      var s = byId[sid];
+      html.push('<div class="song plrow"><span class="num">' + (i + 1) + '</span>' +
+        (s ? '<a href="#/song/' + sid + '"><span class="t">' + escapeHtml(s.title) + '</span>' +
+          (s.artist ? '<span class="m">' + escapeHtml(s.artist) + '</span>' : '') + '</a>'
+          : '<a class="missing"><span class="t">Canzone non trovata</span><span class="m">forse è stata rinominata</span></a>') + '</div>');
+    });
+    if (!shared.songs.length) html.push('<p class="empty">Il link non contiene canzoni.</p>');
+    els.list.innerHTML = html.join('');
+    els.count.textContent = 'Playlist condivisa · ' + plCount(shared.songs.length);
+  }
+  function saveShared() {
+    if (!shared) return;
+    // già salvata (stesso nome e stesse canzoni)? si apre quella
+    var same = state.playlists.filter(function (p) {
+      return p.name === shared.name && p.songs.join('.') === shared.songs.join('.');
+    })[0];
+    var p = same || newPl(shared.name);
+    if (!same) { p.songs = shared.songs.slice(); touchPl(p); toast('Playlist salvata'); }
+    location.replace('#/playlist/' + p.id);
+  }
+
   function movePl(p, from, to) {
     if (to < 0 || to >= p.songs.length || from === to) return;
     p.songs.splice(to, 0, p.songs.splice(from, 1)[0]);
@@ -412,9 +475,11 @@
   }
 
   els.list.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-pl-new],[data-pl-rename],[data-pl-delete],[data-pl-up],[data-pl-down],[data-pl-remove],[data-pl-add]');
+    var t = e.target.closest('[data-pl-new],[data-pl-rename],[data-pl-delete],[data-pl-up],[data-pl-down],[data-pl-remove],[data-pl-add],[data-pl-share],[data-pl-save]');
     if (!t) return;
     var p = findPl(openPl), name;
+    if (t.hasAttribute('data-pl-save')) { saveShared(); return; }
+    if (t.hasAttribute('data-pl-share')) { if (p) sharePl(p); return; }
     if (t.hasAttribute('data-pl-new')) {
       if ((name = askName())) location.hash = '#/playlist/' + newPl(name).id;
       return;
@@ -903,9 +968,18 @@
     var m = location.hash.match(/^#\/song\/([\w-]+)(?:\?pl=([\w-]+))?/);
     if (m) { openSong(m[1], m[2]); return; }
     showList();
+    if (/^#\/condivisa\?/.test(location.hash)) {
+      shared = parseShared(location.hash);
+      setPage('shared', location.hash);
+      render();
+      return;
+    }
     var pm = location.hash.match(/^#\/playlist(?:\/([\w-]+))?$/);
     if (pm && pm[1] && findPl(pm[1])) setPage('playlist', pm[1]);
-    else if (pm) setPage('playlists');
+    else if (pm) {
+      setPage('playlists');
+      if (pm[1]) toast('Playlist non presente su questo dispositivo: per condividerla usa il pulsante Condividi');
+    }
     else setPage(location.hash === '#/canzonieri' && books.length ? 'books' : 'songs');
   }
   window.addEventListener('hashchange', route);

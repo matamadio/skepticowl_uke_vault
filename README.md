@@ -232,6 +232,10 @@ controllare) e le canzoni senza accordi riconosciuti.
   playlist. Aprendo una canzone da una playlist compare la barra ◀ n/N ▶
   per passare alla precedente/successiva (su PC anche `P`/`N`). Le playlist
   restano sul dispositivo e viaggiano con *Esporta/Importa JSON*.
+  Per mandarne una a un altro dispositivo o a un amico usa il pulsante
+  **Condividi** nella playlist: crea un link con nome e canzoni; chi lo apre
+  vede la playlist e la salva con *Salva tra le mie playlist*. (Il semplice
+  indirizzo `#/playlist/…` funziona solo sul dispositivo dove è stata creata.)
 - **Scorrimento rapido su telefono**: mentre scorri compare una maniglia sul
   bordo destro; trascinala per saltare velocemente in qualsiasi punto.
 - **Visualizzatore**: come Notepad, carattere monospazio, tab a 8 colonne,

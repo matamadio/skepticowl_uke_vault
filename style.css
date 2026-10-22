@@ -483,3 +483,4 @@ svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
 .themeseg { margin: 4px 0 8px; }
 .themeseg button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .tagchips .chip.more { color: var(--accent); border-style: dashed; }
+.toast { max-width: calc(100vw - 32px); text-align: center; }
