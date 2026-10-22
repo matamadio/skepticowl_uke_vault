@@ -91,12 +91,14 @@
     var inText = els.inText.checked;
     var favOnly = els.favOnly.getAttribute('aria-pressed') === 'true';
     var folder = els.folder.value;
+    var tag = setting('tag', '');
     var out = [];
     var list = visibleSongs();
     for (var i = 0; i < list.length; i++) {
       var s = list[i];
       if (favOnly && !state.favs[s.id]) continue;
       if (folder !== '*' && s.folder !== folder) continue;
+      if (tag && (!s.tags || s.tags.indexOf(tag) === -1)) continue;
       var hitText = false, ok = true;
       for (var w = 0; w < words.length; w++) {
         if (s._key.indexOf(words[w]) !== -1) continue;
@@ -141,7 +143,30 @@
     var total = visibleSongs().length;
     els.count.textContent = items.length === total ?
       total + ' canzoni' : items.length + ' di ' + total + ' canzoni';
+    renderTagChips();
   }
+
+  // ---------- Tag (da tags.json, applicati da build.py) ----------
+  var tagNames = [];
+  function renderTagChips() {
+    var box = $('tagChips'), cur = setting('tag', ''), count = {};
+    visibleSongs().forEach(function (s) { (s.tags || []).forEach(function (t) { count[t] = (count[t] || 0) + 1; }); });
+    var names = tagNames.filter(function (t) { return count[t]; });
+    if (cur && !count[cur]) { cur = ''; setSetting('tag', ''); } // es. tag solo nella sezione nascosta
+    box.hidden = !names.length;
+    box.innerHTML = names.map(function (t) {
+      return '<button type="button" class="chip" data-tag="' + escapeHtml(t) + '" aria-pressed="' + (t === cur) + '">' +
+        escapeHtml(t) + ' <span class="n">' + count[t] + '</span></button>';
+    }).join('');
+  }
+  $('tagChips').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tag]');
+    if (!b) return;
+    var t = b.getAttribute('data-tag');
+    setSetting('tag', setting('tag', '') === t ? '' : t);
+    render();
+    window.scrollTo(0, 0);
+  });
 
   function renderItems(items, sort, html) {
     if (sort === 'artist') {
@@ -454,6 +479,7 @@
     if (sort === 'recent' && state.last[s.id]) m.push(relTime(state.last[s.id]));
     if (sort === 'plays' && state.plays[s.id]) m.push(state.plays[s.id] + (state.plays[s.id] === 1 ? ' apertura' : ' aperture'));
     if (it.hitText) m.push('<span class="hit">nel testo</span>');
+    if (s.tags) m.push('<span class="tg">' + s.tags.map(escapeHtml).join(' · ') + '</span>');
     return '<div class="song">' +
       '<button class="star' + (fav ? ' on' : '') + '" type="button" data-fav="' + s.id + '" aria-pressed="' + fav +
       '" aria-label="Preferito">' + (fav ? '★' : '☆') + '</button>' +
@@ -1085,8 +1111,9 @@
     meta = data;
     songs = data.songs || [];
     hiddenSections = data.hidden || [];
+    tagNames = data.tags || [];
     songs.forEach(function (s) {
-      s._key = foldSearch(s.artist + ' ' + s.title + ' ' + s.folder);
+      s._key = foldSearch(s.artist + ' ' + s.title + ' ' + s.folder + ' ' + (s.tags || []).join(' '));
       s._text = ' ' + (s.text || '') + ' ';
       byId[s.id] = s;
     });

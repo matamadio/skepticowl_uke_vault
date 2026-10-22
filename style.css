@@ -431,3 +431,21 @@ svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
 
 /* Accordi dentro il testo: grassetto (stessa larghezza nei font monospazio) */
 #text b.ch { font-weight: 700; color: var(--accent); }
+
+/* ---------- Tag ---------- */
+.tagchips {
+  display: flex;
+  gap: 6px;
+  margin: 6px -16px 2px;
+  padding: 2px 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tagchips::-webkit-scrollbar { display: none; }
+.tagchips .chip { flex: none; white-space: nowrap; }
+.tagchips .n { color: var(--muted); font-size: 12px; margin-left: 2px; }
+@media (min-width: 760px) {
+  .tagchips { flex-wrap: wrap; overflow-x: visible; margin: 6px 0 2px; padding: 2px 0 4px; }
+}
+.song .m .tg { color: var(--accent); opacity: .8; }
