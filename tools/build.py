@@ -244,6 +244,25 @@ def build_songbooks(source, out, folder, excluded):
     return items, skipped, too_big
 
 
+def stamp_assets(out):
+    """Mette in index.html ?v=<hash> su app.js e style.css: il browser non
+    puo' cosi' mescolare una pagina nuova con file vecchi in cache."""
+    path = os.path.join(out, "index.html")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as f:
+        html = f.read()
+    new = html
+    for name in ("app.js", "style.css"):
+        p = os.path.join(out, name)
+        if os.path.exists(p):
+            v = file_hash(p)
+            new = re.sub(r'(["\'])' + re.escape(name) + r'(?:\?v=[\w]*)?\1', r"\g<1>%s?v=%s\g<1>" % (name, v), new)
+    if new != html:
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(new)
+
+
 def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(errors="replace")
@@ -267,6 +286,7 @@ def main(argv=None):
     aliases = load_aliases(os.path.join(out, "artists.json"))
     song_artists = load_song_artists(os.path.join(out, "song_artists.json"))
     config = load_config(os.path.join(out, "config.json"))
+    stamp_assets(out)
     files, ignored, skipped_dirs = collect(source, args.sottocartelle, config["sezioni"])
     books, books_skipped, books_big = build_songbooks(
         source, out, config["canzonieri"], config["canzonieri_esclusi"])

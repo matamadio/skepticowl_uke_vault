@@ -830,6 +830,12 @@
         if (els.menu.open) updateOfflineInfo();
       }
     });
+    // Quando una nuova versione del service worker prende il controllo,
+    // ricarica una volta la pagina così app.js e index.html sono della stessa versione
+    var hadController = !!navigator.serviceWorker.controller, reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (hadController && !reloaded && els.viewer.hidden) { reloaded = true; location.reload(); }
+    });
     navigator.serviceWorker.register('sw.js').then(function () {
       return navigator.serviceWorker.ready;
     }).then(function (reg) {
