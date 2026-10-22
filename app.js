@@ -225,6 +225,7 @@
   }
 
   function setPage(p, plId) {
+    plId = plId || null; // undefined e null sono la stessa cosa: niente salto in cima
     var changed = p !== page || plId !== openPl;
     if (changed && (p === 'playlist' || page === 'playlist')) els.q.value = '';
     page = p;
@@ -829,6 +830,8 @@
     else setPage(location.hash === '#/canzonieri' && books.length ? 'books' : 'songs');
   }
   window.addEventListener('hashchange', route);
+  // La posizione di scorrimento la gestisce l'app (elenco ↔ canzone), non il browser
+  try { history.scrollRestoration = 'manual'; } catch (e) { /* vecchi browser */ }
 
   // ---------- Tastiera (PC) ----------
   document.addEventListener('keydown', function (e) {
