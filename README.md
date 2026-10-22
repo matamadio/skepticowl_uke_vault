@@ -196,7 +196,9 @@ all'altro: *Esporta JSON* su uno, *Importa JSON* sull'altro (l'import unisce:
 somma i preferiti e tiene i valori più alti). Cancellare i dati del sito dal
 browser li elimina.
 
-**Installazione**: dal telefono, *Aggiungi a schermata Home* (Safari) o
+**Installazione**: su Android (Chrome) compare da solo un invito
+*Installa Song vault*; "Non ora" lo rimanda di 14 giorni, e il pulsante resta
+comunque nel menu ⋮. Altrimenti, dal telefono, *Aggiungi a schermata Home* (Safari) o
 *Installa app* (Chrome). Dopo la prima apertura con rete, l'app e tutte le
 canzoni sono disponibili anche offline.
 

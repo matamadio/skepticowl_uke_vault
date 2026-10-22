@@ -630,6 +630,46 @@
     thumb.addEventListener('pointercancel', end);
   })();
 
+  // ---------- Installazione come app (Android/Chrome) ----------
+  // Il browser segnala con beforeinstallprompt che il sito è installabile:
+  // si mostra un invito; "Non ora" lo rimanda di 14 giorni.
+  var installEvent = null;
+  var INSTALL_SNOOZE = 14 * 86400000;
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  }
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    installEvent = e;
+    $('menuInstall').hidden = false;
+    if (!isStandalone() && Date.now() - setting('installSnooze', 0) > INSTALL_SNOOZE) {
+      setTimeout(function () { if (installEvent) $('installBar').hidden = false; }, 1500);
+    }
+  });
+  function install() {
+    if (!installEvent) return;
+    var e = installEvent;
+    installEvent = null;
+    $('installBar').hidden = true;
+    $('menuInstall').hidden = true;
+    e.prompt();
+    e.userChoice.then(function (r) {
+      if (r.outcome !== 'accepted') setSetting('installSnooze', Date.now());
+    }).catch(function () {});
+  }
+  $('installYes').addEventListener('click', install);
+  $('menuInstall').addEventListener('click', function () { els.menu.close(); install(); });
+  $('installNo').addEventListener('click', function () {
+    $('installBar').hidden = true;
+    setSetting('installSnooze', Date.now());
+  });
+  window.addEventListener('appinstalled', function () {
+    installEvent = null;
+    $('installBar').hidden = true;
+    $('menuInstall').hidden = true;
+    toast('\uD83E\uDD89 App installata');
+  });
+
   // ---------- Avvio ----------
   function applySettings() {
     els.inText.checked = !!setting('inText', false);
