@@ -90,6 +90,59 @@ def fold(s):
     return s.lower()
 
 
+# ---------- Accordi ----------
+# Un accordo e' una parola isolata (tra spazi) oppure tra parentesi quadre [Am].
+SUFFIX = (
+    r"(?:maj|min|m|M|dim|aug|sus|add|\+|°|ø)?"     # qualita'
+    r"(?:\d{1,2})?"                                 # 7, 9, 11, 13, 5, 6...
+    r"(?:(?:maj|sus|add|aug|dim|b|#|\+)\d{0,2}|-\d{1,2})*"
+    r"(?:\([^)\s]{1,8}\))?")                         # (b9), (add9)...
+ROOT_EN = r"[A-G](?:#|b)?"
+ROOT_IT = r"(?:Do|Re|Mi|Fa|Sol|La|Si)(?:#|b)?"    # notazione italiana
+CHORD = re.compile(ROOT_EN + SUFFIX + r"(?:/" + ROOT_EN + r")?")
+CHORD_IT = re.compile(ROOT_IT + SUFFIX + r"(?:/" + ROOT_IT + r")?")
+BRACKETED = re.compile(r"\[([^\]\s]{1,16})\]")
+TAB_LINE = re.compile(r"^\s*[A-Ga-g][#b]?\s*[|:]?-*[|:]?[-0-9hpbr/\\~x|]{4,}")
+# Diteggiature scritte nel file, es. "Am7 0000", "G9: 4555", "G#=5046", "Fsus (2013)"
+SHAPE = re.compile(r"(?:^|[\s(,;])(" + CHORD.pattern + r")[ \t]*[:=]?[ \t]*\(?([0-9xX]{4})\)?(?=$|[\s),;])")
+# Parole isolate ambigue: accordo solo se la riga e' fatta (quasi) solo di accordi
+AMBIGUOUS = {"A", "E"}
+NOISE = re.compile(r"^(?:x\d+|\d+x|[-|/.:%*]+|\(?x?\d+\)?|n\.?c\.?|\d{4})$", re.I)
+
+
+def find_chords(text):
+    """Accordi in ordine di prima apparizione + diteggiature dichiarate nel file.
+    Restituisce (accordi, forme, incerti); incerti = parole isolate trovate in
+    righe di testo (non di soli accordi), da controllare."""
+    found, shapes, doubtful = {}, {}, set()
+    for line in text.split("\n"):
+        for m in SHAPE.finditer(line):
+            shapes.setdefault(m.group(1), m.group(2).lower())
+        for m in BRACKETED.finditer(line):
+            if CHORD.fullmatch(m.group(1)):
+                found.setdefault(m.group(1), len(found))
+        if TAB_LINE.match(line):
+            continue
+        rest = BRACKETED.sub(" ", line)
+        tokens = [t if CHORD.fullmatch(t) else t.strip("()[],;!?.") for t in re.split(r"[\s|]+", rest) if t]
+        tokens = [t for t in tokens if t and not NOISE.match(t)]
+        if not tokens:
+            continue
+        chords = [t for t in tokens if CHORD.fullmatch(t)]
+        ita = [t for t in tokens if CHORD_IT.fullmatch(t)]
+        chord_line = len(chords) + len(ita) >= 0.6 * len(tokens)
+        if chord_line:  # Do, Re, La... sono anche parole: solo nelle righe di accordi
+            chords = [t for t in tokens if t in chords or t in ita]
+        for c in chords:
+            if chord_line:
+                found.setdefault(c, len(found))
+            elif c not in AMBIGUOUS and len(c) > 1:
+                # parola isolata dentro il testo (es. "... la luna Am ...")
+                found.setdefault(c, len(found))
+                doubtful.add(c)
+    return sorted(found, key=found.get), shapes, doubtful
+
+
 def search_text(text):
     """Testo compatto per la ricerca full-text: niente accenti, niente simboli."""
     return " ".join(re.sub(r"[^\w']+", " ", fold(text)).split())
@@ -244,6 +297,25 @@ def build_songbooks(source, out, folder, excluded):
     return items, skipped, too_big
 
 
+def stamp_assets(out):
+    """Mette in index.html ?v=<hash> su app.js e style.css: il browser non
+    puo' cosi' mescolare una pagina nuova con file vecchi in cache."""
+    path = os.path.join(out, "index.html")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as f:
+        html = f.read()
+    new = html
+    for name in ("app.js", "chords.js", "style.css"):
+        p = os.path.join(out, name)
+        if os.path.exists(p):
+            v = file_hash(p)
+            new = re.sub(r'(["\'])' + re.escape(name) + r'(?:\?v=[\w]*)?\1', r"\g<1>%s?v=%s\g<1>" % (name, v), new)
+    if new != html:
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(new)
+
+
 def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(errors="replace")
@@ -267,6 +339,7 @@ def main(argv=None):
     aliases = load_aliases(os.path.join(out, "artists.json"))
     song_artists = load_song_artists(os.path.join(out, "song_artists.json"))
     config = load_config(os.path.join(out, "config.json"))
+    stamp_assets(out)
     files, ignored, skipped_dirs = collect(source, args.sottocartelle, config["sezioni"])
     books, books_skipped, books_big = build_songbooks(
         source, out, config["canzonieri"], config["canzonieri_esclusi"])
@@ -275,6 +348,7 @@ def main(argv=None):
         shutil.rmtree(songs_dir)
 
     songs, encodings, ids = [], collections.Counter(), {}
+    chord_doubts = collections.defaultdict(list)
     for src in files:
         rel = os.path.relpath(src, source).replace(os.sep, "/")
         with open(src, "rb") as f:
@@ -297,6 +371,9 @@ def main(argv=None):
         stem = os.path.splitext(rel.rpartition("/")[2])[0]
         artist, title = split_name(stem)
         artist = clean_artist(artist) or song_artists.get(fold(stem.strip()), "")
+        chords, shapes, doubtful = find_chords(text)
+        for c in doubtful:
+            chord_doubts[c].append(rel)
         artist = aliases.get(artist_key(artist), artist)
         mtime = datetime.datetime.fromtimestamp(os.stat(src).st_mtime, datetime.timezone.utc)
         songs.append({
@@ -308,6 +385,8 @@ def main(argv=None):
             "mtime": mtime.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "h": hashlib.sha1(text.encode("utf-8")).hexdigest()[:8],
             "text": search_text(text),
+            "chords": chords,
+            **({"shapes": shapes} if shapes else {}),
         })
 
     # Stesso artista scritto in modi diversi: si unisce da solo
@@ -380,6 +459,23 @@ def main(argv=None):
         print("\nArtisti quasi uguali, forse refusi (se si', aggiungi un alias in artists.json):")
         for a, b in typos:
             print("  %s  |  %s" % (a, b))
+    # Accordi: riepilogo e rapporto completo in tools/accordi.txt (non pubblicato)
+    usage = collections.Counter(c for s in songs for c in s["chords"])
+    print("\nAccordi: trovati in %d canzoni su %d, %d accordi diversi" % (
+        sum(1 for s in songs if s["chords"]), len(songs), len(usage)))
+    report = os.path.join(os.path.dirname(os.path.abspath(__file__)), "accordi.txt")
+    with open(report, "w", encoding="utf-8", newline="\n") as f:
+        f.write("Accordi per numero di canzoni\n\n")
+        for c, n in sorted(usage.items(), key=lambda kv: (-kv[1], kv[0])):
+            f.write("%5d  %s\n" % (n, c))
+        f.write("\nAccordi trovati come parola isolata dentro righe di testo (da controllare)\n\n")
+        for c in sorted(chord_doubts):
+            f.write("  %s: %s\n" % (c, ", ".join(sorted(chord_doubts[c]))))
+        f.write("\nCanzoni senza accordi riconosciuti\n\n")
+        for s in songs:
+            if not s["chords"]:
+                f.write("  %s\n" % s["path"])
+    print("  rapporto completo: %s" % report)
     print("\nVersione: %s" % version)
 
 

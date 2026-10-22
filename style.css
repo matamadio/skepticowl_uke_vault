@@ -402,3 +402,29 @@ dialog h3 { font-size: 15px; margin: 16px 0 4px; }
 @media (min-width: 760px) {
   .vbar .plbar { flex: 1 1 100%; }
 }
+
+/* ---------- Diagrammi degli accordi ---------- */
+.chordstrip {
+  display: flex;
+  gap: 2px;
+  padding: 8px 12px 4px;
+  overflow-x: auto;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  -webkit-overflow-scrolling: touch;
+}
+@media (min-width: 760px) {
+  .chordstrip { flex-wrap: wrap; justify-content: center; overflow-x: visible; }
+}
+.chordbtn { flex: none; border: none; background: transparent; padding: 0 2px; min-height: 0; border-radius: 8px; color: var(--text); }
+.chordbtn:hover { background: var(--accent-soft); }
+svg.chord { display: block; }
+svg.chord line { stroke: var(--muted); stroke-width: 1; }
+svg.chord line.nut { stroke: var(--text); stroke-width: 3; }
+svg.chord .dot { fill: var(--accent); }
+svg.chord .open { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+svg.chord text { fill: var(--text); text-anchor: middle; font-family: system-ui, sans-serif; }
+svg.chord .cn { font-size: 13px; font-weight: 650; }
+svg.chord .fr { font-size: 9px; text-anchor: end; fill: var(--muted); }
+svg.chord .mx { font-size: 10px; fill: var(--muted); }
+svg.chord .alt { font-size: 8.5px; fill: var(--muted); }

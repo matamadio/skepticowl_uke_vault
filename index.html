@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=e11a433c">
 </head>
 <body>
 
@@ -76,12 +76,16 @@
         <span id="fontSize" class="fsize"></span>
         <button id="fontUp" type="button" title="Carattere più grande (+)">A+</button>
       </div>
+      <div class="seg" role="group" aria-label="Accordi">
+        <button id="chordsBtn" type="button" title="Mostra/nascondi i diagrammi degli accordi (C)">Accordi</button>
+      </div>
       <div class="seg" role="group" aria-label="Scorrimento automatico">
         <button id="scrollBtn" type="button" title="Scorrimento automatico (S)">&#9654;</button>
         <input id="speed" type="range" min="1" max="20" step="1" aria-label="Velocità">
       </div>
     </div>
   </header>
+  <div id="chordStrip" class="chordstrip" hidden></div>
   <div id="scroller" class="scroller"><pre id="text"></pre></div>
 </section>
 
@@ -121,6 +125,7 @@
   <button id="installYes" type="button" class="primary">Installa</button>
 </div>
 
-<script src="app.js"></script>
+<script src="chords.js?v=54b74c6f"></script>
+<script src="app.js?v=a2c2f542"></script>
 </body>
 </html>

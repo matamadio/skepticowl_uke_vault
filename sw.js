@@ -1,11 +1,11 @@
 /* Service worker: app sempre aggiornata quando c'è rete, tutto disponibile offline. */
 'use strict';
 
-var SHELL = 'vault-shell-v1';
+var SHELL = 'vault-shell-v3';
 var SONGS = 'vault-songs-v1';
 var BOOKS = 'vault-canzonieri-v1';
 var SHELL_FILES = [
-  './', 'index.html', 'app.js', 'style.css', 'songs.json', 'manifest.webmanifest',
+  './', 'index.html', 'app.js', 'chords.js', 'style.css', 'songs.json', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 
@@ -43,8 +43,10 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  // App e songs.json: prima la rete, poi la cache
-  e.respondWith(fetch(req).then(function (res) {
+  // App e songs.json: prima la rete (scavalcando la cache HTTP del browser,
+  // che su GitHub Pages dura 10 minuti e mescolerebbe file vecchi e nuovi),
+  // poi la cache
+  e.respondWith(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(function (res) {
     if (res.ok) {
       var copy = res.clone();
       caches.open(SHELL).then(function (c) { c.put(req, copy); });
