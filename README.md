@@ -168,7 +168,8 @@ tag:
 
 Nel sito: un tocco su un chip filtra (un altro tocco lo toglie); più chip insieme
 si sommano (es. *Pop* + *Alternative* = canzoni dell'uno o dell'altro), ✕ li
-toglie tutti. Si combina
+toglie tutti. I chip stanno al massimo su 3 righe: "+N altri" mostra il resto
+("meno" li richiude); quelli selezionati restano sempre visibili. Si combina
 con ricerca, preferiti e ordinamento; i tag compaiono anche sotto ogni canzone
 e scrivendo il nome di un tag nella ricerca si trovano le sue canzoni.
 

@@ -447,23 +447,22 @@ svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
 #text b.ch { font-weight: 700; color: var(--accent); }
 
 /* ---------- Tag ---------- */
+/* Chip dei tag su più righe; su telefono compatti */
 .tagchips {
   display: flex;
-  gap: 6px;
-  margin: 6px -16px 2px;
-  padding: 2px 16px 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  flex-wrap: wrap;
+  gap: 5px 4px;
+  margin: 6px 0 2px;
 }
-.tagchips::-webkit-scrollbar { display: none; }
-.tagchips .chip { flex: none; white-space: nowrap; }
-.tagchips .n { color: var(--muted); font-size: 12px; margin-left: 2px; }
+.tagchips .chip { flex: none; white-space: nowrap; min-height: 26px; padding: 1px 8px; font-size: 13px; }
+.tagchips .n { color: var(--muted); font-size: 11px; margin-left: 1px; }
 @media (min-width: 760px) {
-  .tagchips { flex-wrap: wrap; overflow-x: visible; margin: 6px 0 2px; padding: 2px 0 4px; }
+  .tagchips { gap: 6px; }
+  .tagchips .chip { min-height: 30px; padding: 3px 12px; font-size: 14px; }
+  .tagchips .n { font-size: 12px; }
 }
 .song .m .tg { color: var(--accent); opacity: .8; }
-.tagchips .chip.clear { padding: 3px 10px; color: var(--accent); border-color: var(--accent); }
+.tagchips .chip.clear { color: var(--accent); border-color: var(--accent); }
 
 /* Ricerca su Ultimate Guitar */
 .ug { text-align: center; margin: 14px 16px 24px; font-size: 14px; }
@@ -483,3 +482,4 @@ svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
 #themeBtn { font-size: 20px; }
 .themeseg { margin: 4px 0 8px; }
 .themeseg button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.tagchips .chip.more { color: var(--accent); border-style: dashed; }
