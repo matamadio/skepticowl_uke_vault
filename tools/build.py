@@ -228,6 +228,28 @@ def load_aliases(path):
     }
 
 
+# Video YouTube: il primo link trovato nel file, oppure quello in videos.json
+YOUTUBE = re.compile(r"(?:youtube\.com/(?:watch\?(?:[^\s#]*?&)?v=|embed/|shorts/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})")
+
+
+def youtube_id(text):
+    m = YOUTUBE.search(text or "")
+    if m:
+        return m.group(1)
+    t = (text or "").strip()
+    return t if re.fullmatch(r"[A-Za-z0-9_-]{11}", t) else ""
+
+
+def load_videos(path):
+    """videos.json: nome del file (senza .txt) -> link YouTube (o id del video)."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        raw = json.load(f)
+    return {fold(k.strip()): youtube_id(v) for k, v in raw.items()
+            if not k.startswith("_") and isinstance(v, str)}
+
+
 def load_song_artists(path):
     """song_artists.json: nome del file (senza .txt) -> artista, per i file
     senza " - " nel nome. Maiuscole e accenti non contano."""
@@ -382,6 +404,7 @@ def main(argv=None):
 
     aliases = load_aliases(os.path.join(out, "artists.json"))
     song_artists = load_song_artists(os.path.join(out, "song_artists.json"))
+    videos = load_videos(os.path.join(out, "videos.json"))
     config = load_config(os.path.join(out, "config.json"))
     stamp_assets(out)
     files, ignored, skipped_dirs = collect(source, args.sottocartelle, config["sezioni"])
@@ -435,6 +458,9 @@ def main(argv=None):
             "chords": chords,
             **({"shapes": shapes} if shapes else {}),
         })
+        yt = videos.get(fold(stem.strip())) or youtube_id(text)
+        if yt:
+            songs[-1]["yt"] = yt
 
     # Stesso artista scritto in modi diversi: si unisce da solo
     spellings = collections.defaultdict(collections.Counter)

@@ -788,6 +788,7 @@
       current = null;
       els.vTitle.textContent = 'Canzone non trovata';
       els.vArtist.textContent = '';
+      $('ytBox').innerHTML = '';
       showMessage('Questa canzone non esiste più (forse è stata rinominata).');
       return;
     }
@@ -800,6 +801,7 @@
     updateViewerStar();
     showMessage('Caricamento…');
     $('chordStrip').hidden = true;
+    renderVideo(s);
     requestWakeLock();
 
     var token = ++loadToken;
@@ -822,6 +824,7 @@
 
   function showList() {
     stopScroll();
+    $('ytBox').innerHTML = ''; // ferma un eventuale video in riproduzione
     releaseWakeLock();
     current = null;
     loadToken++;
@@ -908,6 +911,31 @@
     var x = $('chordStrip').scrollLeft;
     renderChords();
     $('chordStrip').scrollLeft = x;
+  });
+
+  // ---------- Video YouTube ----------
+  // Se il video è noto (link nel file o videos.json) si mostra l'anteprima;
+  // il lettore si carica solo al tocco (niente traffico né cookie prima).
+  // Sempre presenti i link per cercare la canzone su YouTube.
+  function renderVideo(s) {
+    var box = $('ytBox'), q = (s.artist ? s.artist + ' ' : '') + s.title;
+    var search = 'https://www.youtube.com/results?search_query=';
+    box.innerHTML = (s.yt ? '<button type="button" class="ytframe ytthumb" data-yt="' + escapeHtml(s.yt) + '" aria-label="Guarda il video">' +
+        '<img src="https://i.ytimg.com/vi/' + encodeURIComponent(s.yt) + '/hqdefault.jpg" alt="" loading="lazy">' +
+        '<span class="play" aria-hidden="true">&#9654;</span></button>' : '') +
+      '<div class="ytlinks">' +
+      '<a href="' + search + encodeURIComponent(q) + '" target="_blank" rel="noopener">Cerca «' + escapeHtml(q) + '» su YouTube &#8599;</a>' +
+      '<a href="' + search + encodeURIComponent(q + ' ukulele') + '" target="_blank" rel="noopener">Versioni per ukulele &#8599;</a>' +
+      '</div>';
+  }
+  $('ytBox').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-yt]');
+    if (!b) return;
+    var f = document.createElement('div');
+    f.className = 'ytframe';
+    f.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(b.getAttribute('data-yt')) +
+      '?autoplay=1&rel=0" title="Video YouTube" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+    b.replaceWith(f);
   });
 
   // ---------- Scorrimento automatico ----------
