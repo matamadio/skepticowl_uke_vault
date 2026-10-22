@@ -182,6 +182,10 @@
       (s.tags || []).forEach(function (t) { count[t] = (count[t] || 0) + 1; });
     });
     var names = tagNames.filter(function (t) { return count[t]; });
+    var open = setting('tagsOpen', false);
+    // chiusi: i tag selezionati per primi, così restano sempre visibili
+    if (!open) names = names.filter(function (t) { return sel.indexOf(t) !== -1; })
+      .concat(names.filter(function (t) { return sel.indexOf(t) === -1; }));
     box.hidden = !tagNames.some(function (t) { return all[t]; });
     box.innerHTML = (sel.length ? '<button type="button" class="chip clear" data-tag-clear aria-label="Togli tutti i tag">&#10005;</button>' : '') +
       names.map(function (t) {
@@ -189,10 +193,49 @@
         return '<button type="button" class="chip" data-tag="' + escapeHtml(t) + '" aria-pressed="' + on + '">' +
           escapeHtml(t) + ' <span class="n">' + count[t] + '</span></button>';
       }).join('');
+    fitTagRows(box, open);
   }
+
+  // Al massimo 3 righe di chip; gli altri dietro "+N", che li mostra tutti
+  var TAG_ROWS = 3;
+  function fitTagRows(box, open) {
+    var chips = Array.prototype.slice.call(box.children);
+    if (!chips.length || box.offsetParent === null) return; // pagina non visibile: niente misure
+    var tops = [];
+    chips.forEach(function (c) { if (tops.indexOf(c.offsetTop) === -1) tops.push(c.offsetTop); });
+    if (tops.length <= TAG_ROWS) return;
+    var more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'chip more';
+    more.setAttribute('data-tag-more', '');
+    box.appendChild(more);
+    if (open) { more.textContent = 'meno \u25B4'; return; }
+    tops.sort(function (a, b) { return a - b; });
+    var limit = tops[TAG_ROWS - 1], hiddenN = 0;
+    chips.forEach(function (c) { if (c.offsetTop > limit) { c.hidden = true; hiddenN++; } });
+    var visibleChips = chips.filter(function (c) { return !c.hidden; });
+    more.textContent = '+' + hiddenN + ' altri';
+    // il pulsante "+N" deve stare nella terza riga: se va a capo, si nasconde un altro chip
+    while (more.offsetTop > limit && visibleChips.length) {
+      var last = visibleChips.pop();
+      if (last.getAttribute('aria-pressed') === 'true' || last.hasAttribute('data-tag-clear')) break;
+      last.hidden = true;
+      more.textContent = '+' + (++hiddenN) + ' altri';
+    }
+  }
+  var tagResizeTimer = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(tagResizeTimer);
+    tagResizeTimer = setTimeout(function () { if (page === 'songs' && !els.listView.hidden) renderTagChips(); }, 120);
+  });
   $('tagChips').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-tag],[data-tag-clear]');
+    var b = e.target.closest('[data-tag],[data-tag-clear],[data-tag-more]');
     if (!b) return;
+    if (b.hasAttribute('data-tag-more')) {
+      setSetting('tagsOpen', !setting('tagsOpen', false));
+      renderTagChips();
+      return;
+    }
     var sel = selectedTags().slice();
     if (b.hasAttribute('data-tag-clear')) sel = [];
     else {
