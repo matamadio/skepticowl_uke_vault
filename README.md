@@ -166,7 +166,9 @@ tag:
 - Il build stampa quante canzoni ha ogni tag e **avvisa se un nome in
   `tags.json` non corrisponde a nessun artista o file** (refusi).
 
-Nel sito: un tocco su un chip filtra (un altro tocco lo toglie), e si combina
+Nel sito: un tocco su un chip filtra (un altro tocco lo toglie); più chip insieme
+si combinano (es. *Demenziale* + *Italiani* = canzoni con entrambi i tag), ✕ li
+toglie tutti, e il numero su ogni chip dice quante canzoni restano aggiungendolo. Si combina
 con ricerca, preferiti e ordinamento; i tag compaiono anche sotto ogni canzone
 e scrivendo il nome di un tag nella ricerca si trovano le sue canzoni.
 
