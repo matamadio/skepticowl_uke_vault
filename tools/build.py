@@ -16,6 +16,7 @@ Cosa fa:
     cp1252) e riscrive tutto in UTF-8 senza BOM, lasciando intatti spazi e
     tab: l'unica modifica e' CRLF -> LF;
   * ricrea da zero la cartella songs/ del repository e scrive songs.json;
+  * i file il cui nome inizia con _ vengono sempre esclusi;
   * copia i PDF della cartella dei canzonieri (config.json) in canzonieri/,
     tranne quelli esclusi, e scrive canzonieri.json.
 
@@ -180,7 +181,9 @@ def collect(source, recursive, sections):
             dirs[:] = keep
         for name in sorted(files):
             ext = os.path.splitext(name)[1].lower()
-            if ext == ".txt" and not name.startswith("."):
+            if name.startswith("_"):
+                ignored["file che iniziano con _"] += 1
+            elif ext == ".txt" and not name.startswith("."):
                 found.append(os.path.join(root, name))
             else:
                 ignored[ext or "(senza estensione)"] += 1
@@ -212,6 +215,9 @@ def build_songbooks(source, out, folder, excluded):
         src = os.path.join(src_dir, name)
         stem, ext = os.path.splitext(name)
         if ext.lower() != ".pdf" or not os.path.isfile(src):
+            continue
+        if name.startswith("_"):
+            skipped.append(name)
             continue
         if any(fnmatch.fnmatch(name.casefold(), p) or fnmatch.fnmatch(stem.casefold(), p) for p in patterns):
             skipped.append(name)
@@ -339,7 +345,7 @@ def main(argv=None):
         print("Sottocartelle escluse (usa --sottocartelle per includerle): " + ", ".join(skipped_dirs))
     print("Canzonieri (PDF): %d, %.1f MB" % (len(books), sum(b["size"] for b in books) / 1048576))
     if books_skipped:
-        print("  esclusi da config.json: " + ", ".join(books_skipped))
+        print("  esclusi (config.json o nome che inizia con _): " + ", ".join(books_skipped))
     if books_big:
         print("  ATTENZIONE, oltre 95 MB, non copiati (GitHub li rifiuta): " + ", ".join(books_big))
     if ignored:

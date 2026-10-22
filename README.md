@@ -48,6 +48,8 @@ Serve Python 3.9 o più recente (solo libreria standard) e Git.
      tutto aggiungi `--sottocartelle`;
    - copia i PDF di `Uke\canzonieri` (non delle sue sottocartelle) per la
      pagina *Canzonieri*, tranne quelli esclusi in `config.json`;
+   - esclude sempre i file il cui nome inizia con `_` (`.txt` e PDF): è il
+     modo più rapido per nascondere una canzone o un canzoniere;
    - ignora tutto ciò che non è `.txt` (pdf, docx, gp5, midi, immagini, `.lnk`);
    - riconosce la codifica (UTF-16 con BOM, UTF-8 con o senza BOM,
      altrimenti cp1252) e salva tutto in UTF-8; spazi e tab restano identici,
