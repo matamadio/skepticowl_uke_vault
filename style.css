@@ -428,3 +428,6 @@ svg.chord .cn { font-size: 13px; font-weight: 650; }
 svg.chord .fr { font-size: 9px; text-anchor: end; fill: var(--muted); }
 svg.chord .mx { font-size: 10px; fill: var(--muted); }
 svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
+
+/* Accordi dentro il testo: grassetto (stessa larghezza nei font monospazio) */
+#text b.ch { font-weight: 700; color: var(--accent); }

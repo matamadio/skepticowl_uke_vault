@@ -203,6 +203,8 @@ controllare) e le canzoni senza accordi riconosciuti.
     lunga entra nello schermo (minimo 3 pt, oltre si scorre di lato).
   - *Originale* (predefinita su PC): dimensione piena, scorrimento orizzontale.
   - *A− / A+*: dimensione del carattere (in *Adatta* è il massimo), ricordata.
+  - Gli accordi dentro il testo sono in grassetto colorato (stesse regole del
+    riconoscimento, l'allineamento resta identico).
   - **Accordi**: in cima alla canzone i diagrammi (ukulele GCEA) degli accordi
     usati in quel file, nell'ordine in cui compaiono. Un tocco su un
     diagramma mostra un'altra diteggiatura (fino a 4, indicate con 1/4…).
