@@ -11,8 +11,10 @@
   --mono: Consolas, "Cascadia Mono", Menlo, "DejaVu Sans Mono", "Courier New", monospace;
   color-scheme: light;
 }
+/* Tema scuro: automatico (dal sistema) a meno che l'utente scelga "Chiaro";
+   oppure forzato con "Scuro" (attributo data-theme su <html>) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #1b1a18;
     --surface: #24221f;
     --text: #ece8e1;
@@ -24,6 +26,18 @@
     --paper: #161513;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1a18;
+  --surface: #24221f;
+  --text: #ece8e1;
+  --muted: #a39d93;
+  --line: #3a3732;
+  --accent: #e0a35a;
+  --accent-soft: #3d3022;
+  --star: #f2b630;
+  --paper: #161513;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -463,3 +477,9 @@ svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
   text-decoration: none;
   font-size: 15px;
 }
+
+/* Pulsanti tema */
+.titletools { display: flex; align-items: center; }
+#themeBtn { font-size: 20px; }
+.themeseg { margin: 4px 0 8px; }
+.themeseg button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }

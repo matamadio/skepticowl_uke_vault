@@ -11,7 +11,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=5d9032d2">
+<script>
+  // Tema scelto (Auto/Chiaro/Scuro) applicato subito, prima di disegnare la pagina
+  try {
+    var t = (JSON.parse(localStorage.getItem('skepticowl-vault.v1') || '{}').settings || {}).theme;
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="style.css?v=60ffd518">
 </head>
 <body>
 
@@ -19,7 +26,10 @@
   <header class="sticky">
     <div class="titlebar">
       <h1>Skepticowl's song vault</h1>
-      <button id="menuBtn" class="icon" type="button" aria-label="Menu" title="Menu">&#8942;</button>
+      <div class="titletools">
+        <button id="themeBtn" class="icon" type="button" aria-label="Tema" title="Tema: automatico"></button>
+        <button id="menuBtn" class="icon" type="button" aria-label="Menu" title="Menu">&#8942;</button>
+      </div>
     </div>
     <nav id="tabs" class="tabs">
       <a href="#/" data-page="songs" aria-current="page">Canzoni</a>
@@ -107,6 +117,12 @@
     <p id="info" class="muted"></p>
     <p id="offline" class="muted"></p>
     <div class="buttons"><button id="menuInstall" type="button" hidden>Installa come app</button></div>
+    <h3>Tema</h3>
+    <div class="seg themeseg" role="group" aria-label="Tema">
+      <button type="button" data-theme-set="auto">Automatico</button>
+      <button type="button" data-theme-set="light">Chiaro</button>
+      <button type="button" data-theme-set="dark">Scuro</button>
+    </div>
     <h3>Stato su questo dispositivo</h3>
     <p class="muted">Preferiti, contatori, ultimo utilizzo e impostazioni restano solo in questo browser. Esportali per spostarli su un altro dispositivo.</p>
     <div class="buttons">
@@ -127,6 +143,6 @@
 </div>
 
 <script src="chords.js?v=54b74c6f"></script>
-<script src="app.js?v=2f27d600"></script>
+<script src="app.js?v=01fb4c08"></script>
 </body>
 </html>
