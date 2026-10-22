@@ -637,7 +637,7 @@
       if (token !== loadToken) return;
       maxCols = columns(t);
       els.text.className = '';
-      els.text.textContent = t;
+      els.text.innerHTML = markChords(t, s.chords || []);
       renderChords();
       applyLayout();
     }).catch(function () {
@@ -691,6 +691,37 @@
     }).join('');
     strip.hidden = false;
   }
+  // Accordi nel testo in grassetto. Stesse regole di build.py: [Am] sempre;
+  // parole isolate solo se sono tra gli accordi della canzone, e quelle
+  // ambigue (A, E, notazione italiana) solo nelle righe fatte di accordi.
+  var TAB_RE = /^\s*[A-Ga-g][#b]?\s*[|:]?-*[|:]?[-0-9hpbr\/\\~x|]{4,}/;
+  var NOISE_RE = /^(?:x\d+|\d+x|[-|\/.:%*]+|\(?x?\d+\)?|n\.?c\.?|\d{4})$/i;
+  var ITA_RE = /^(Do|Re|Mi|Fa|Sol|La|Si)/;
+  function markChords(text, chords) {
+    if (!chords.length) return escapeHtml(text);
+    var set = {};
+    chords.forEach(function (c) { set[c] = 1; });
+    return text.split('\n').map(function (line) {
+      if (TAB_RE.test(line)) return escapeHtml(line);
+      var toks = line.replace(/\[[^\]\s]{1,16}\]/g, ' ').split(/[\s|]+/).filter(function (t) {
+        return t && !NOISE_RE.test(t);
+      });
+      var hits = toks.filter(function (t) { return set[t] || set[t.replace(/^[(\[]+|[)\],;!?.]+$/g, '')]; }).length;
+      var chordLine = toks.length && hits >= 0.6 * toks.length;
+      // pezzi: [Accordo] | spazi | parola
+      return line.replace(/\[([^\]\s]{1,16})\]|[^\s|\[]+|[\s|]+|\[/g, function (m, br) {
+        if (br !== undefined) return set[br] ? '<b class="ch">' + escapeHtml(m) + '</b>' : escapeHtml(m);
+        var core = m.replace(/^[(\[]+|[)\],;!?.]+$/g, '');
+        if (!set[m] && !set[core]) return escapeHtml(m);
+        var ambiguous = m === 'A' || m === 'E' || ITA_RE.test(core);
+        if (!chordLine && (ambiguous || core.length < 2)) return escapeHtml(m);
+        if (set[m]) return '<b class="ch">' + escapeHtml(m) + '</b>';
+        var i = m.indexOf(core);
+        return escapeHtml(m.slice(0, i)) + '<b class="ch">' + escapeHtml(core) + '</b>' + escapeHtml(m.slice(i + core.length));
+      });
+    }).join('\n');
+  }
+
   function toggleChords() {
     setSetting('showChords', !setting('showChords', true));
     renderChords();
