@@ -233,3 +233,70 @@ dialog h3 { font-size: 15px; margin: 16px 0 4px; }
   .vbar .vrow:first-child { flex: 1 1 280px; }
   .tools { padding: 0; }
 }
+
+/* ---------- Schede Canzoni / Canzonieri ---------- */
+.tabs { display: flex; gap: 4px; margin: 2px 0 4px; }
+.tabs a {
+  padding: 4px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  border: 1px solid transparent;
+}
+.tabs a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+
+/* Sezioni (es. Cazzate) sotto l'elenco principale */
+.section {
+  margin: 28px 0 0;
+  padding: 14px 16px 8px;
+  font-size: 20px;
+  border-top: 3px solid var(--accent);
+  background: var(--bg);
+}
+.section .n { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+
+/* Canzonieri */
+.book .pdf {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  color: #fff;
+  background: #b3261e;
+  border-radius: 4px;
+  padding: 3px 5px;
+  margin: 0 8px 0 10px;
+}
+
+/* Su PC la tab sta al centro dello schermo */
+@media (min-width: 760px) {
+  #text { min-width: 0; margin: 0 auto; }
+  #text.msg { margin: 0; }
+}
+
+/* Maniglia di scorrimento rapido (solo touch) */
+.fastscroll {
+  position: fixed;
+  top: 64px;
+  bottom: 12px;
+  right: 0;
+  width: 36px;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .25s;
+}
+.fastscroll.on { opacity: 1; }
+.fastscroll .thumb {
+  position: absolute;
+  right: 3px;
+  width: 26px;
+  height: 52px;
+  border-radius: 13px;
+  background: var(--accent);
+  box-shadow: 0 1px 4px rgb(0 0 0 / .3);
+  touch-action: none;
+}
+.fastscroll.on .thumb { pointer-events: auto; }
+.fastscroll.drag .thumb { filter: brightness(1.15); }

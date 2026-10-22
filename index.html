@@ -21,9 +21,14 @@
       <h1>Skepticowl's song vault</h1>
       <button id="menuBtn" class="icon" type="button" aria-label="Menu" title="Menu">&#8942;</button>
     </div>
+    <nav id="tabs" class="tabs" hidden>
+      <a href="#/" data-page="songs" aria-current="page">Canzoni</a>
+      <a href="#/canzonieri" data-page="books">Canzonieri</a>
+    </nav>
     <input id="q" type="search" placeholder="Cerca artista o titolo…" autocomplete="off" spellcheck="false" aria-label="Cerca">
   </header>
   <div class="listhead">
+    <div id="songFilters">
     <div class="filters">
       <label class="check"><input id="inText" type="checkbox"> cerca nel testo</label>
       <button id="favOnly" class="chip" type="button" aria-pressed="false">&#9733; solo preferiti</button>
@@ -40,6 +45,7 @@
       <label class="sel">Cartella
         <select id="folder"><option value="*">tutte</option></select>
       </label>
+    </div>
     </div>
     <div id="count" class="count" aria-live="polite"></div>
   </div>

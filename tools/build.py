@@ -7,14 +7,17 @@ Uso:
     python tools/build.py SORGENTE --out CARTELLA_DEL_REPO
 
 Cosa fa:
-  * prende i file .txt della cartella sorgente; le sottocartelle sono escluse,
-    a meno di usare --sottocartelle (tutto il resto, pdf/docx/gp5/midi/
-    immagini/.lnk..., viene ignorato, come le cartelle che iniziano con un
-    punto);
+  * prende i file .txt della cartella sorgente e quelli delle "sezioni"
+    elencate in config.json (es. cazzate/, senza le sue sottocartelle); le
+    altre sottocartelle sono escluse, a meno di usare --sottocartelle (tutto
+    il resto, pdf/docx/gp5/midi/immagini/.lnk..., viene ignorato, come le
+    cartelle che iniziano con un punto);
   * riconosce la codifica (UTF-16 con BOM, UTF-8 con o senza BOM, altrimenti
     cp1252) e riscrive tutto in UTF-8 senza BOM, lasciando intatti spazi e
     tab: l'unica modifica e' CRLF -> LF;
-  * ricrea da zero la cartella songs/ del repository e scrive songs.json.
+  * ricrea da zero la cartella songs/ del repository e scrive songs.json;
+  * copia i PDF della cartella dei canzonieri (config.json) in canzonieri/,
+    tranne quelli esclusi, e scrive canzonieri.json.
 
 Solo libreria standard, Python 3.9+.
 """
@@ -24,6 +27,7 @@ import codecs
 import collections
 import datetime
 import difflib
+import fnmatch
 import hashlib
 import json
 import os
@@ -153,12 +157,27 @@ def is_inside(path, folder):
         return False
 
 
-def collect(source, recursive):
+def load_config(path):
+    config = {"sezioni": ["cazzate"], "canzonieri": "canzonieri", "canzonieri_esclusi": []}
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            config.update({k: v for k, v in json.load(f).items() if not k.startswith("_")})
+    return config
+
+
+def collect(source, recursive, sections):
+    """I .txt della cartella principale e delle sezioni (non delle loro
+    sottocartelle); con recursive tutti."""
+    sections = {d.casefold() for d in sections}
     found, ignored, skipped_dirs = [], collections.Counter(), []
     for root, dirs, files in os.walk(source):
         dirs[:] = sorted(d for d in dirs if not d.startswith("."))
         if not recursive:
-            skipped_dirs, dirs[:] = dirs[:], []
+            top = os.path.normcase(root) == os.path.normcase(source)
+            keep = [d for d in dirs if top and d.casefold() in sections]
+            rel = os.path.relpath(root, source).replace(os.sep, "/")
+            skipped_dirs += [d if top else rel + "/" + d for d in dirs if d not in keep]
+            dirs[:] = keep
         for name in sorted(files):
             ext = os.path.splitext(name)[1].lower()
             if ext == ".txt" and not name.startswith("."):
@@ -166,6 +185,56 @@ def collect(source, recursive):
             else:
                 ignored[ext or "(senza estensione)"] += 1
     return found, ignored, skipped_dirs
+
+
+def file_hash(path):
+    h = hashlib.sha1()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()[:8]
+
+
+def build_songbooks(source, out, folder, excluded):
+    """Copia i PDF di SORGENTE/<folder> (solo il primo livello) in canzonieri/
+    e scrive canzonieri.json. Restituisce (copiati, esclusi, troppo_grandi)."""
+    out_dir = os.path.join(out, "canzonieri")
+    if os.path.isdir(out_dir):
+        shutil.rmtree(out_dir)
+    src_dir = None
+    if folder and os.path.isdir(source):
+        for d in os.listdir(source):
+            if d.casefold() == folder.casefold() and os.path.isdir(os.path.join(source, d)):
+                src_dir = os.path.join(source, d)
+    items, skipped, too_big = [], [], []
+    patterns = [p.casefold() for p in excluded]
+    for name in sorted(os.listdir(src_dir) if src_dir else [], key=str.casefold):
+        src = os.path.join(src_dir, name)
+        stem, ext = os.path.splitext(name)
+        if ext.lower() != ".pdf" or not os.path.isfile(src):
+            continue
+        if any(fnmatch.fnmatch(name.casefold(), p) or fnmatch.fnmatch(stem.casefold(), p) for p in patterns):
+            skipped.append(name)
+            continue
+        size = os.path.getsize(src)
+        if size > 95 * 1024 * 1024:  # GitHub rifiuta i file oltre 100 MB
+            too_big.append(name)
+            continue
+        os.makedirs(out_dir, exist_ok=True)
+        shutil.copyfile(src, os.path.join(out_dir, name))
+        mtime = datetime.datetime.fromtimestamp(os.stat(src).st_mtime, datetime.timezone.utc)
+        items.append({
+            "id": song_id("canzonieri/" + name),
+            "title": stem.strip(),
+            "path": name,
+            "size": size,
+            "mtime": mtime.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "h": file_hash(src),
+        })
+    with open(os.path.join(out, "canzonieri.json"), "w", encoding="utf-8", newline="\n") as f:
+        json.dump({"items": items}, f, ensure_ascii=False, separators=(",", ":"))
+        f.write("\n")
+    return items, skipped, too_big
 
 
 def main(argv=None):
@@ -184,12 +253,16 @@ def main(argv=None):
     songs_dir = os.path.join(out, "songs")
     if not os.path.isdir(source):
         sys.exit("Cartella sorgente non trovata: %s" % source)
-    if is_inside(source, songs_dir):
-        sys.exit("La sorgente non puo' stare dentro %s" % songs_dir)
+    for d in (songs_dir, os.path.join(out, "canzonieri")):
+        if is_inside(source, d):
+            sys.exit("La sorgente non puo' stare dentro %s" % d)
 
     aliases = load_aliases(os.path.join(out, "artists.json"))
     song_artists = load_song_artists(os.path.join(out, "song_artists.json"))
-    files, ignored, skipped_dirs = collect(source, args.sottocartelle)
+    config = load_config(os.path.join(out, "config.json"))
+    files, ignored, skipped_dirs = collect(source, args.sottocartelle, config["sezioni"])
+    books, books_skipped, books_big = build_songbooks(
+        source, out, config["canzonieri"], config["canzonieri_esclusi"])
 
     if os.path.isdir(songs_dir):
         shutil.rmtree(songs_dir)
@@ -261,8 +334,14 @@ def main(argv=None):
     print("Artisti: %d, senza artista: %d" % (
         len({s["artist"] for s in songs if s["artist"]}),
         sum(1 for s in songs if not s["artist"])))
+    skipped_dirs = [d for d in skipped_dirs if d.casefold() != config["canzonieri"].casefold()]
     if skipped_dirs:
         print("Sottocartelle escluse (usa --sottocartelle per includerle): " + ", ".join(skipped_dirs))
+    print("Canzonieri (PDF): %d, %.1f MB" % (len(books), sum(b["size"] for b in books) / 1048576))
+    if books_skipped:
+        print("  esclusi da config.json: " + ", ".join(books_skipped))
+    if books_big:
+        print("  ATTENZIONE, oltre 95 MB, non copiati (GitHub li rifiuta): " + ", ".join(books_big))
     if ignored:
         print("Ignorati: " + ", ".join("%s %d" % kv for kv in ignored.most_common()))
 

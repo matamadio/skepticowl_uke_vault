@@ -1,0 +1,6 @@
+{
+  "_nota": "sezioni: sottocartelle di Uke i cui .txt (non le loro sottocartelle) vengono mostrati in una sezione a parte sotto l'elenco principale. canzonieri: sottocartella da cui prendere i PDF per la pagina Canzonieri. canzonieri_esclusi: nomi dei PDF da non pubblicare (con o senza .pdf, maiuscole indifferenti, accettano * e ?).",
+  "sezioni": ["cazzate"],
+  "canzonieri": "canzonieri",
+  "canzonieri_esclusi": []
+}

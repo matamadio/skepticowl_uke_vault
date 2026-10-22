@@ -15,9 +15,10 @@ build sulla cartella vera.
 | `tools/build.py` | Legge la cartella dei `.txt`, li converte in UTF-8 e genera `songs/` + `songs.json` |
 | `artists.json` | Alias degli artisti → nome giusto (es. `"APC": "A Perfect Circle"`) |
 | `song_artists.json` | Artista dei file senza ` - ` nel nome (es. `"Misirlou": "Dick Dale"`) |
+| `config.json` | Sezioni a parte (`cazzate`), cartella dei canzonieri e PDF da escludere |
 | `index.html`, `app.js`, `style.css` | L'app: elenco + visualizzatore |
 | `sw.js`, `manifest.webmanifest`, `icons/` | App installabile e uso offline |
-| `songs/`, `songs.json` | **Generati** dal build: non modificarli a mano |
+| `songs/`, `songs.json`, `canzonieri/`, `canzonieri.json` | **Generati** dal build: non modificarli a mano |
 | `tools/esempi/` | Txt di prova (tab, accordi allineati, cp1252, UTF-16, righe lunghe) |
 
 ## Prima installazione
@@ -40,15 +41,19 @@ Serve Python 3.9 o più recente (solo libreria standard) e Git.
    ```
 
    Il build:
-   - prende solo i `.txt` della cartella `Uke`: le sottocartelle
-     (`cazzate/`, `canzonieri/`, `midi/`, `JDuetti/`, ...) sono escluse e il
-     riepilogo le elenca. Per includerle aggiungi `--sottocartelle`:
-     `python tools/build.py "X:\Dropbox\Public\Uke" --sottocartelle`;
+   - prende i `.txt` della cartella `Uke` e quelli di `Uke\cazzate` (non
+     delle sue sottocartelle), che nel sito compaiono in una sezione a parte
+     sotto l'elenco principale. Le altre sottocartelle (`midi/`,
+     `JDuetti/`, ...) sono escluse e il riepilogo le elenca. Per includere
+     tutto aggiungi `--sottocartelle`;
+   - copia i PDF di `Uke\canzonieri` (non delle sue sottocartelle) per la
+     pagina *Canzonieri*, tranne quelli esclusi in `config.json`;
    - ignora tutto ciò che non è `.txt` (pdf, docx, gp5, midi, immagini, `.lnk`);
    - riconosce la codifica (UTF-16 con BOM, UTF-8 con o senza BOM,
      altrimenti cp1252) e salva tutto in UTF-8; spazi e tab restano identici,
      cambia solo il fine riga (CRLF → LF);
-   - **cancella e ricrea** `songs/` e `songs.json`;
+   - **cancella e ricrea** `songs/`, `songs.json`, `canzonieri/` e
+     `canzonieri.json`;
    - stampa un riepilogo (codifiche, cartelle, file ignorati) e l'elenco
      degli artisti che sembrano scritti in modi diversi.
 
@@ -133,15 +138,38 @@ vengono scaricate per l'offline.
   file, preferito, contatore e ultimo utilizzo di quella canzone ripartono da
   zero.
 
+### config.json
+
+```json
+{
+  "sezioni": ["cazzate"],
+  "canzonieri": "canzonieri",
+  "canzonieri_esclusi": ["Bozza vecchia", "*scansione*"]
+}
+```
+
+- `sezioni`: sottocartelle di `Uke` mostrate ognuna in una sezione a parte,
+  sotto l'elenco principale (solo i loro `.txt`, non le loro sottocartelle).
+- `canzonieri`: la sottocartella con i PDF della pagina *Canzonieri*.
+- `canzonieri_esclusi`: PDF da non pubblicare, con o senza `.pdf`, senza
+  badare alle maiuscole; `*` e `?` funzionano come jolly. GitHub rifiuta i
+  file oltre 100 MB: il build salta quelli sopra 95 MB e lo segnala.
+
 ## Uso dell'app
 
 - **Elenco**: ricerca mentre scrivi (non distingue maiuscole e accenti) su
   artista e titolo; con *cerca nel testo* cerca anche dentro le canzoni.
   Ordine per artista (raggruppato), titolo, ultimo utilizzo o più cliccate.
   Filtro *solo preferiti* (e per cartella, che compare solo se il build ha
-  incluso le sottocartelle). La stellina segna i preferiti.
+  incluso le sottocartelle). La stellina segna i preferiti. Le canzoni di
+  `cazzate` stanno in una sezione a parte, in fondo.
+- **Canzonieri**: la scheda in alto apre l'elenco dei PDF (con ricerca); un
+  tocco li apre nel lettore PDF del browser. Quelli aperti restano
+  disponibili offline.
+- **Scorrimento rapido su telefono**: mentre scorri compare una maniglia sul
+  bordo destro; trascinala per saltare velocemente in qualsiasi punto.
 - **Visualizzatore**: come Notepad, carattere monospazio, tab a 8 colonne,
-  mai a capo automatico.
+  mai a capo automatico; su PC il testo sta al centro dello schermo.
   - *Adatta* (predefinita su telefono): riduce il carattere finché la riga più
     lunga entra nello schermo (minimo 3 pt, oltre si scorre di lato).
   - *Originale* (predefinita su PC): dimensione piena, scorrimento orizzontale.
