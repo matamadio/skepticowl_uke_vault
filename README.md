@@ -252,6 +252,9 @@ controllare) e le canzoni senza accordi riconosciuti.
     supporta).
   - Tastiera su PC: `/` cerca, `Esc` indietro, `+`/`-` carattere,
     `F` cambia modalità, `S` scorrimento automatico.
+- **Tema**: il pulsante del tema in alto (mezzo cerchio, sole o luna) passa da *automatico* (segue il
+  telefono/PC) a *chiaro* a *scuro*; la stessa scelta c'è nel menu ⋮. Resta
+  memorizzata sul dispositivo.
 - **Menu ⋮**: informazioni, stato dell'offline ed **Esporta/Importa JSON**.
 
 Preferiti, playlist, contatori, ultimo utilizzo e impostazioni restano **solo nel

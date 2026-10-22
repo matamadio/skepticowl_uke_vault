@@ -1073,6 +1073,39 @@
     toast('\uD83E\uDD89 App installata');
   });
 
+  // ---------- Tema: Automatico (segue il sistema), Chiaro, Scuro ----------
+  var THEME_ICON = {
+    auto: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
+    light: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+    dark: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>'
+  };
+  var THEME_NAME = { auto: 'automatico', light: 'chiaro', dark: 'scuro' };
+  function applyTheme() {
+    var t = setting('theme', 'auto');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    else document.documentElement.removeAttribute('data-theme');
+    $('themeBtn').innerHTML = THEME_ICON[t] || THEME_ICON.auto;
+    $('themeBtn').title = 'Tema: ' + (THEME_NAME[t] || 'automatico') + ' (tocca per cambiare)';
+    document.querySelectorAll('[data-theme-set]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-set') === t));
+    });
+    // colore della barra del browser
+    var bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { m.setAttribute('content', bg); });
+  }
+  function setTheme(t) { setSetting('theme', t); applyTheme(); }
+  $('themeBtn').addEventListener('click', function () {
+    var order = ['auto', 'light', 'dark'], t = setting('theme', 'auto');
+    var next = order[(order.indexOf(t) + 1) % order.length];
+    setTheme(next);
+    toast('Tema ' + THEME_NAME[next]);
+  });
+  document.querySelectorAll('[data-theme-set]').forEach(function (b) {
+    b.addEventListener('click', function () { setTheme(b.getAttribute('data-theme-set')); });
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+  applyTheme();
+
   // ---------- Avvio ----------
   function applySettings() {
     els.inText.checked = !!setting('inText', false);
@@ -1084,6 +1117,7 @@
     els.favOnly.setAttribute('aria-pressed', String(!!setting('favOnly', false)));
     els.speed.value = setting('speed', 5);
     applyLayout();
+    applyTheme();
   }
 
   // ---------- Sezioni nascoste (es. cazzate) ----------
