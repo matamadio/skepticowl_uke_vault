@@ -21,9 +21,10 @@
       <h1>Skepticowl's song vault</h1>
       <button id="menuBtn" class="icon" type="button" aria-label="Menu" title="Menu">&#8942;</button>
     </div>
-    <nav id="tabs" class="tabs" hidden>
+    <nav id="tabs" class="tabs">
       <a href="#/" data-page="songs" aria-current="page">Canzoni</a>
-      <a href="#/canzonieri" data-page="books">Canzonieri</a>
+      <a href="#/playlist" data-page="playlists">Playlist</a>
+      <a href="#/canzonieri" data-page="books" hidden>Canzonieri</a>
     </nav>
     <input id="q" type="search" placeholder="Cerca artista o titolo…" autocomplete="off" spellcheck="false" aria-label="Cerca">
   </header>
@@ -58,6 +59,12 @@
       <button id="backBtn" class="icon" type="button" aria-label="Indietro" title="Indietro (Esc)">&#8592;</button>
       <button id="vStar" class="star" type="button" aria-label="Preferito" title="Preferito">&#9734;</button>
       <div class="vtitle"><span id="vTitle"></span><span id="vArtist" class="vartist"></span></div>
+      <button id="plAddBtn" class="icon pladd" type="button" title="Aggiungi a una playlist" aria-label="Aggiungi a una playlist">&#9776;<sup>+</sup></button>
+    </div>
+    <div id="plBar" class="vrow plbar" hidden>
+      <button id="plPrev" type="button" aria-label="Canzone precedente" title="Precedente (P)">&#9664;</button>
+      <span class="plinfo"><span id="plName"></span> · <span id="plPos"></span></span>
+      <button id="plNext" type="button" aria-label="Canzone successiva" title="Successiva (N)">&#9654;</button>
     </div>
     <div class="vrow tools">
       <div class="seg" role="group" aria-label="Modalità">
@@ -77,6 +84,17 @@
   </header>
   <div id="scroller" class="scroller"><pre id="text"></pre></div>
 </section>
+
+<dialog id="plDialog">
+  <form method="dialog">
+    <h2>Aggiungi a playlist</h2>
+    <div id="plDialogList" class="pllist"></div>
+    <div class="buttons">
+      <button id="plDialogNew" type="button">+ Nuova playlist</button>
+    </div>
+    <div class="buttons end"><button value="close">Fatto</button></div>
+  </form>
+</dialog>
 
 <dialog id="menu">
   <form method="dialog">

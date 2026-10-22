@@ -10,7 +10,7 @@
 
   // ---------- Stato per dispositivo (localStorage) ----------
   function emptyState() {
-    return { favs: {}, plays: {}, last: {}, settings: {} };
+    return { favs: {}, plays: {}, last: {}, settings: {}, playlists: [] };
   }
   function loadState() {
     try {
@@ -25,6 +25,14 @@
     ['favs', 'plays', 'last', 'settings'].forEach(function (k) {
       if (s[k] && typeof s[k] === 'object' && !Array.isArray(s[k])) out[k] = s[k];
     });
+    if (Array.isArray(s.playlists)) {
+      out.playlists = s.playlists.filter(function (p) {
+        return p && typeof p.id === 'string' && Array.isArray(p.songs);
+      }).map(function (p) {
+        return { id: p.id, name: String(p.name || 'Playlist'), songs: p.songs.filter(function (x) { return typeof x === 'string'; }),
+          updated: Number(p.updated) || 0 };
+      });
+    }
     return out;
   }
   var state = loadState();
@@ -108,6 +116,8 @@
 
   function render() {
     if (page === 'books') { renderBooks(); return; }
+    if (page === 'playlists') { renderPlaylists(); return; }
+    if (page === 'playlist') { renderPlaylist(); return; }
     var items = filtered();
     var sort = els.sort.value;
     var html = [];
@@ -189,17 +199,254 @@
       books.length + ' canzonieri' : items.length + ' di ' + books.length + ' canzonieri';
   }
 
-  function setPage(p) {
-    var changed = p !== page;
+  function setPage(p, plId) {
+    var changed = p !== page || plId !== openPl;
+    if (changed && (p === 'playlist' || page === 'playlist')) els.q.value = '';
     page = p;
+    openPl = plId || null;
+    var tab = p === 'playlist' ? 'playlists' : p;
     document.querySelectorAll('.tabs a').forEach(function (a) {
-      if (a.getAttribute('data-page') === p) a.setAttribute('aria-current', 'page');
+      if (a.getAttribute('data-page') === tab) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     });
-    $('songFilters').hidden = p === 'books';
-    els.q.placeholder = p === 'books' ? 'Cerca canzoniere…' : 'Cerca artista o titolo…';
+    $('songFilters').hidden = p !== 'songs';
+    els.q.placeholder = {
+      books: 'Cerca canzoniere…',
+      playlists: 'Cerca playlist…',
+      playlist: 'Cerca canzoni da aggiungere…'
+    }[p] || 'Cerca artista o titolo…';
     if (changed) { render(); window.scrollTo(0, 0); updateHeadHeight(); }
   }
+
+  // ---------- Playlist ----------
+  // Salvate per dispositivo in state.playlists: [{id, name, songs: [id...], updated}]
+  var openPl = null;   // playlist aperta nella pagina di dettaglio
+  var viewerPl = null; // playlist che si sta "suonando" nel visualizzatore
+
+  function findPl(id) {
+    for (var i = 0; i < state.playlists.length; i++) if (state.playlists[i].id === id) return state.playlists[i];
+    return null;
+  }
+  function touchPl(p) { p.updated = Date.now(); save(); }
+  function newPl(name) {
+    var p = { id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name, songs: [], updated: 0 };
+    state.playlists.push(p);
+    touchPl(p);
+    return p;
+  }
+  function askName(def) {
+    var n = window.prompt('Nome della playlist', def || '');
+    return n && n.trim() ? n.trim().slice(0, 80) : null;
+  }
+  function plCount(n) { return n + (n === 1 ? ' canzone' : ' canzoni'); }
+
+  function renderPlaylists() {
+    var words = foldSearch(els.q.value).split(' ').filter(Boolean);
+    var items = state.playlists.filter(function (p) {
+      var k = foldSearch(p.name);
+      return words.every(function (w) { return k.indexOf(w) !== -1; });
+    }).sort(function (a, b) { return collator.compare(a.name, b.name); });
+    els.list.innerHTML = '<div class="pltools"><button type="button" class="primary" data-pl-new>+ Nuova playlist</button></div>' +
+      (items.length ? items.map(function (p) {
+        return '<div class="song"><span class="plicon" aria-hidden="true">&#9776;</span>' +
+          '<a href="#/playlist/' + p.id + '"><span class="t">' + escapeHtml(p.name) + '</span>' +
+          '<span class="m">' + plCount(p.songs.length) + '</span></a></div>';
+      }).join('') : '<p class="empty">' + (state.playlists.length ? 'Nessuna playlist trovata.' :
+        'Nessuna playlist. Creane una, poi aggiungi canzoni da qui o dal visualizzatore (pulsante &#9776;+).') + '</p>');
+    els.count.textContent = state.playlists.length + (state.playlists.length === 1 ? ' playlist' : ' playlist');
+  }
+
+  function renderPlaylist() {
+    var p = findPl(openPl);
+    if (!p) { location.hash = '#/playlist'; return; }
+    var html = ['<div class="plhead"><a class="icon" href="#/playlist" aria-label="Tutte le playlist">&#8592;</a>' +
+      '<h2>' + escapeHtml(p.name) + '</h2>' +
+      '<button type="button" class="icon" data-pl-rename title="Rinomina" aria-label="Rinomina">&#9998;</button>' +
+      '<button type="button" class="icon" data-pl-delete title="Elimina playlist" aria-label="Elimina playlist">&#128465;</button></div>'];
+    if (p.songs.length) {
+      html.push('<div class="plsongs" id="plSongs">');
+      p.songs.forEach(function (sid, i) {
+        var s = byId[sid];
+        html.push('<div class="song plrow" data-idx="' + i + '">' +
+          '<span class="handle" title="Trascina per spostare" aria-hidden="true">&#8942;&#8942;</span>' +
+          '<span class="num">' + (i + 1) + '</span>' +
+          (s ? '<a href="#/song/' + sid + '?pl=' + p.id + '" data-open="' + sid + '"><span class="t">' + escapeHtml(s.title) +
+            '</span>' + (s.artist ? '<span class="m">' + escapeHtml(s.artist) + '</span>' : '') + '</a>'
+            : '<a class="missing"><span class="t">Canzone non trovata</span><span class="m">forse è stata rinominata</span></a>') +
+          '<button type="button" class="mini" data-pl-up="' + i + '" aria-label="Su"' + (i ? '' : ' disabled') + '>&#9650;</button>' +
+          '<button type="button" class="mini" data-pl-down="' + i + '" aria-label="Giù"' + (i < p.songs.length - 1 ? '' : ' disabled') + '>&#9660;</button>' +
+          '<button type="button" class="mini" data-pl-remove="' + i + '" aria-label="Togli">&#10005;</button></div>');
+      });
+      html.push('</div>');
+    } else {
+      html.push('<p class="empty">Playlist vuota: cerca in alto le canzoni da aggiungere.</p>');
+    }
+
+    // Risultati della ricerca per aggiungere canzoni
+    var words = foldSearch(els.q.value).split(' ').filter(Boolean);
+    if (words.length) {
+      var found = visibleSongs().filter(function (s) {
+        return words.every(function (w) { return s._key.indexOf(w) !== -1; });
+      }).sort(function (a, b) { return collator.compare(a.artist + a.title, b.artist + b.title); }).slice(0, 50);
+      html.push('<h2 class="section">Aggiungi</h2>');
+      html.push(found.length ? found.map(function (s) {
+        var n = p.songs.filter(function (x) { return x === s.id; }).length;
+        return '<div class="song"><button type="button" class="star addbtn" data-pl-add="' + s.id + '" aria-label="Aggiungi">+</button>' +
+          '<a href="#/song/' + s.id + '"><span class="t">' + escapeHtml(s.title) + '</span><span class="m">' +
+          escapeHtml(s.artist || 'Senza artista') + (n ? ' · già in playlist' : '') + '</span></a></div>';
+      }).join('') : '<p class="empty">Nessuna canzone trovata.</p>');
+    }
+    els.list.innerHTML = html.join('');
+    els.count.textContent = plCount(p.songs.length);
+  }
+
+  function movePl(p, from, to) {
+    if (to < 0 || to >= p.songs.length || from === to) return;
+    p.songs.splice(to, 0, p.songs.splice(from, 1)[0]);
+    touchPl(p);
+  }
+
+  els.list.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-pl-new],[data-pl-rename],[data-pl-delete],[data-pl-up],[data-pl-down],[data-pl-remove],[data-pl-add]');
+    if (!t) return;
+    var p = findPl(openPl), name;
+    if (t.hasAttribute('data-pl-new')) {
+      if ((name = askName())) location.hash = '#/playlist/' + newPl(name).id;
+      return;
+    }
+    if (!p) return;
+    if (t.hasAttribute('data-pl-rename')) {
+      if ((name = askName(p.name))) { p.name = name; touchPl(p); }
+    } else if (t.hasAttribute('data-pl-delete')) {
+      if (!window.confirm('Eliminare la playlist "' + p.name + '"?')) return;
+      state.playlists.splice(state.playlists.indexOf(p), 1);
+      save();
+      location.hash = '#/playlist';
+      return;
+    } else if (t.hasAttribute('data-pl-up')) {
+      var i = Number(t.getAttribute('data-pl-up'));
+      movePl(p, i, i - 1);
+    } else if (t.hasAttribute('data-pl-down')) {
+      var j = Number(t.getAttribute('data-pl-down'));
+      movePl(p, j, j + 1);
+    } else if (t.hasAttribute('data-pl-remove')) {
+      p.songs.splice(Number(t.getAttribute('data-pl-remove')), 1);
+      touchPl(p);
+    } else if (t.hasAttribute('data-pl-add')) {
+      p.songs.push(t.getAttribute('data-pl-add'));
+      touchPl(p);
+      toast('Aggiunta a "' + p.name + '"');
+    }
+    var y = window.scrollY;
+    render();
+    window.scrollTo(0, y);
+  });
+
+  // Trascinamento dalla maniglia (mouse e dita)
+  (function () {
+    var drag = null;
+    els.list.addEventListener('pointerdown', function (e) {
+      var h = e.target.closest('.handle');
+      if (!h || page !== 'playlist') return;
+      var row = h.closest('.plrow');
+      drag = { row: row, from: Number(row.getAttribute('data-idx')), id: e.pointerId };
+      h.setPointerCapture(e.pointerId);
+      row.classList.add('dragging');
+      e.preventDefault();
+    });
+    els.list.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var box = drag.row.parentNode;
+      var rows = Array.prototype.filter.call(box.children, function (r) { return r !== drag.row; });
+      var before = null;
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i].getBoundingClientRect();
+        if (e.clientY < r.top + r.height / 2) { before = rows[i]; break; }
+      }
+      if (before !== drag.row.nextSibling) box.insertBefore(drag.row, before);
+    });
+    function end(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var to = Array.prototype.indexOf.call(drag.row.parentNode.children, drag.row);
+      var p = findPl(openPl);
+      drag.row.classList.remove('dragging');
+      if (p) movePl(p, drag.from, to);
+      drag = null;
+      var y = window.scrollY;
+      render();
+      window.scrollTo(0, y);
+    }
+    els.list.addEventListener('pointerup', end);
+    els.list.addEventListener('pointercancel', end);
+  })();
+
+  // Visualizzatore dentro una playlist: barra ◀ n/N ▶
+  function plIndex(p, id) {
+    var at = Number(setting('plPos_' + p.id, -1));
+    if (p.songs[at] === id) return at; // stessa canzone ripetuta: ricorda la posizione
+    return p.songs.indexOf(id);
+  }
+  function updatePlBar(id) {
+    var p = viewerPl && findPl(viewerPl), bar = $('plBar');
+    if (!p) { bar.hidden = true; return; }
+    var i = plIndex(p, id);
+    $('plName').textContent = p.name;
+    $('plPos').textContent = (i + 1) + '/' + p.songs.length;
+    $('plPrev').disabled = i <= 0;
+    $('plNext').disabled = i < 0 || i >= p.songs.length - 1;
+    bar.hidden = false;
+  }
+  function stepPl(d) {
+    var p = viewerPl && findPl(viewerPl);
+    if (!p || !current) return;
+    var i = plIndex(p, current.id) + d;
+    if (i < 0 || i >= p.songs.length) return;
+    setSetting('plPos_' + p.id, i);
+    location.replace('#/song/' + p.songs[i] + '?pl=' + p.id);
+  }
+  $('plPrev').addEventListener('click', function () { stepPl(-1); });
+  $('plNext').addEventListener('click', function () { stepPl(1); });
+  els.list.addEventListener('click', function (e) {
+    // posizione esatta della canzone aperta dalla playlist
+    var a = e.target.closest('.plrow a[data-open]');
+    if (a && openPl) setSetting('plPos_' + openPl, Number(a.closest('.plrow').getAttribute('data-idx')));
+  });
+
+  // Dialogo "aggiungi a playlist" dal visualizzatore
+  var plDialog = $('plDialog');
+  function renderPlDialog() {
+    var sid = current && current.id;
+    $('plDialogList').innerHTML = state.playlists.length ? state.playlists.slice().sort(function (a, b) {
+      return collator.compare(a.name, b.name);
+    }).map(function (p) {
+      var has = p.songs.indexOf(sid) !== -1;
+      return '<button type="button" class="plpick' + (has ? ' on' : '') + '" data-pick="' + p.id + '" aria-pressed="' + has + '">' +
+        '<span>' + (has ? '&#10003;' : '+') + '</span>' + escapeHtml(p.name) +
+        '<small>' + plCount(p.songs.length) + '</small></button>';
+    }).join('') : '<p class="muted">Ancora nessuna playlist.</p>';
+  }
+  $('plAddBtn').addEventListener('click', function () {
+    if (!current) return;
+    renderPlDialog();
+    if (plDialog.showModal) plDialog.showModal(); else plDialog.setAttribute('open', '');
+  });
+  $('plDialogList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-pick]');
+    if (!b || !current) return;
+    var p = findPl(b.getAttribute('data-pick'));
+    var i = p.songs.indexOf(current.id);
+    if (i === -1) p.songs.push(current.id); else p.songs.splice(i, 1);
+    touchPl(p);
+    renderPlDialog();
+    updatePlBar(current.id);
+  });
+  $('plDialogNew').addEventListener('click', function () {
+    var name = askName();
+    if (!name || !current) return;
+    newPl(name).songs.push(current.id);
+    save();
+    renderPlDialog();
+  });
 
   function row(it, showArtist, sort) {
     var s = it.s, fav = !!state.favs[s.id], m = [];
@@ -352,8 +599,10 @@
     els.text.textContent = msg;
   }
 
-  function openSong(id) {
+  function openSong(id, plId) {
     var s = byId[id];
+    viewerPl = plId && findPl(plId) ? plId : null;
+    updatePlBar(id);
     if (!els.viewer.hidden && current && current.id === id) return;
     if (els.viewer.hidden) listScroll = window.scrollY;
     els.listView.hidden = true;
@@ -415,7 +664,7 @@
 
   function goBack() {
     if (cameFromList && history.length > 1) history.back();
-    else location.hash = '#/';
+    else location.hash = viewerPl ? '#/playlist/' + viewerPl : '#/';
   }
   $('backBtn').addEventListener('click', goBack);
 
@@ -476,10 +725,13 @@
 
   // ---------- Routing ----------
   function route() {
-    var m = location.hash.match(/^#\/song\/([\w-]+)/);
-    if (m) { openSong(m[1]); return; }
+    var m = location.hash.match(/^#\/song\/([\w-]+)(?:\?pl=([\w-]+))?/);
+    if (m) { openSong(m[1], m[2]); return; }
     showList();
-    setPage(location.hash === '#/canzonieri' && books.length ? 'books' : 'songs');
+    var pm = location.hash.match(/^#\/playlist(?:\/([\w-]+))?$/);
+    if (pm && pm[1] && findPl(pm[1])) setPage('playlist', pm[1]);
+    else if (pm) setPage('playlists');
+    else setPage(location.hash === '#/canzonieri' && books.length ? 'books' : 'songs');
   }
   window.addEventListener('hashchange', route);
 
@@ -494,6 +746,8 @@
       else if (e.key === '-') bumpFont(-1);
       else if (e.key === 's' || e.key === 'S') { if (scrolling) stopScroll(); else startScroll(); }
       else if (e.key === 'f' || e.key === 'F') setMode(mode() === 'fit' ? 'orig' : 'fit');
+      else if ((e.key === 'n' || e.key === 'N') && viewerPl) stepPl(1);
+      else if ((e.key === 'p' || e.key === 'P') && viewerPl) stepPl(-1);
     } else if (e.key === '/' && !typing) {
       e.preventDefault();
       els.q.focus();
@@ -512,7 +766,8 @@
 
   $('exportBtn').addEventListener('click', function () {
     var data = JSON.stringify({ app: 'skepticowl-vault', version: 1, exported: new Date().toISOString(),
-      favs: state.favs, plays: state.plays, last: state.last, settings: state.settings }, null, 1);
+      favs: state.favs, plays: state.plays, last: state.last, settings: state.settings,
+      playlists: state.playlists }, null, 1);
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
     a.download = 'skepticowl-vault-stato-' + new Date().toISOString().slice(0, 10) + '.json';
@@ -541,11 +796,18 @@
         if (v > (state.last[k] || 0)) state.last[k] = v;
       });
       Object.keys(inc.settings).forEach(function (k) { state.settings[k] = inc.settings[k]; });
+      // Playlist: stessa id -> vince la versione modificata per ultima
+      inc.playlists.forEach(function (p) {
+        var mine = findPl(p.id);
+        if (!mine) state.playlists.push(p);
+        else if (p.updated > mine.updated) state.playlists[state.playlists.indexOf(mine)] = p;
+      });
       save();
       fillFolders();
       applySettings();
       render();
-      menuMsg.textContent = 'Importato: ' + n + ' preferiti uniti a quelli già presenti.';
+      menuMsg.textContent = 'Importato: ' + n + ' preferiti e ' + inc.playlists.length +
+        ' playlist uniti a quelli già presenti.';
     }).catch(function () {
       menuMsg.textContent = 'File non valido.';
     });
@@ -760,7 +1022,7 @@
   }).then(function (data) {
     books = (data && data.items) || [];
     books.forEach(function (b) { b._key = foldSearch(b.title); });
-    $('tabs').hidden = !books.length;
+    document.querySelector('.tabs a[data-page="books"]').hidden = !books.length;
     render();
     updateHeadHeight();
     route();
