@@ -16,6 +16,7 @@ build sulla cartella vera.
 | `artists.json` | Alias degli artisti → nome giusto (es. `"APC": "A Perfect Circle"`) |
 | `song_artists.json` | Artista dei file senza ` - ` nel nome (es. `"Misirlou": "Dick Dale"`) |
 | `tags.json` | Tag per i filtri (*Cantautori*, *Demenziale*…): artisti, canzoni, cartelle |
+| `videos.json` | Video YouTube da mostrare in fondo alle canzoni (nome del file → link) |
 | `config.json` | Sezioni a parte (`cazzate`), cartella dei canzonieri e PDF da escludere |
 | `index.html`, `app.js`, `style.css` | L'app: elenco + visualizzatore |
 | `sw.js`, `manifest.webmanifest`, `icons/` | App installabile e uso offline |
@@ -252,6 +253,12 @@ controllare) e le canzoni senza accordi riconosciuti.
     Il pulsante *Accordi* (o il tasto `C`) li nasconde/mostra.
     Se nel file scrivi una diteggiatura accanto al nome (`Am7 0000`,
     `G9: 4555`, `A = 2104`, `x` per corda muta), viene usata quella.
+  - **In fondo alla canzone**: i link *Cerca su YouTube* e *Versioni per
+    ukulele*. Se il video è noto compare anche il lettore (si carica solo al
+    tocco): vale per i file che contengono un link YouTube e per quelli
+    elencati in `videos.json` (`"Beatles - Help": "https://youtu.be/…"`).
+    YouTube non permette di incorporare i risultati di una ricerca, quindi il
+    video giusto va indicato una volta.
   - ▶ scorrimento automatico, con la velocità sul cursore accanto.
   - Lo schermo resta acceso mentre leggi (Wake Lock, dove il browser lo
     supporta).
