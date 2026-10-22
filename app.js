@@ -626,6 +626,7 @@
     els.vArtist.textContent = [s.artist, s.folder].filter(Boolean).join(' · ');
     updateViewerStar();
     showMessage('Caricamento…');
+    $('chordStrip').hidden = true;
     requestWakeLock();
 
     var token = ++loadToken;
@@ -637,6 +638,7 @@
       maxCols = columns(t);
       els.text.className = '';
       els.text.textContent = t;
+      renderChords();
       applyLayout();
     }).catch(function () {
       if (token !== loadToken) return;
@@ -667,6 +669,42 @@
     else location.hash = viewerPl ? '#/playlist/' + viewerPl : '#/';
   }
   $('backBtn').addEventListener('click', goBack);
+
+  // ---------- Diagrammi degli accordi ----------
+  // Gli accordi di ogni canzone li trova build.py (songs.json: chords, shapes);
+  // qui si disegnano. Un tocco su un diagramma mostra la diteggiatura successiva.
+  var chordAlt = {};
+  function renderChords() {
+    var strip = $('chordStrip'), list = (current && current.chords) || [];
+    var on = setting('showChords', true);
+    $('chordsBtn').setAttribute('aria-pressed', String(on));
+    $('chordsBtn').hidden = !list.length || !window.UkeChords;
+    if (!list.length || !on || !window.UkeChords) { strip.hidden = true; return; }
+    var custom = current.shapes || {};
+    strip.innerHTML = list.map(function (name) {
+      var all = UkeChords.shapes(name, custom[name]);
+      if (!all.length) return '';
+      var i = (chordAlt[current.id + '|' + name] || 0) % all.length;
+      return '<button type="button" class="chordbtn" data-chord="' + escapeHtml(name) + '" title="' +
+        (all.length > 1 ? 'Tocca per un\'altra diteggiatura' : escapeHtml(name)) + '">' +
+        UkeChords.svg(name, all[i], all.length > 1 ? (i + 1) + '/' + all.length : '') + '</button>';
+    }).join('');
+    strip.hidden = false;
+  }
+  function toggleChords() {
+    setSetting('showChords', !setting('showChords', true));
+    renderChords();
+  }
+  $('chordsBtn').addEventListener('click', toggleChords);
+  $('chordStrip').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-chord]');
+    if (!b || !current) return;
+    var k = current.id + '|' + b.getAttribute('data-chord');
+    chordAlt[k] = (chordAlt[k] || 0) + 1;
+    var x = $('chordStrip').scrollLeft;
+    renderChords();
+    $('chordStrip').scrollLeft = x;
+  });
 
   // ---------- Scorrimento automatico ----------
   var scrolling = false, lastT = 0, carry = 0, rafId = 0;
@@ -746,6 +784,7 @@
       else if (e.key === '-') bumpFont(-1);
       else if (e.key === 's' || e.key === 'S') { if (scrolling) stopScroll(); else startScroll(); }
       else if (e.key === 'f' || e.key === 'F') setMode(mode() === 'fit' ? 'orig' : 'fit');
+      else if (e.key === 'c' || e.key === 'C') toggleChords();
       else if ((e.key === 'n' || e.key === 'N') && viewerPl) stepPl(1);
       else if ((e.key === 'p' || e.key === 'P') && viewerPl) stepPl(-1);
     } else if (e.key === '/' && !typing) {

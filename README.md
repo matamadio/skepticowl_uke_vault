@@ -140,6 +140,18 @@ vengono scaricate per l'offline.
   file, preferito, contatore e ultimo utilizzo di quella canzone ripartono da
   zero.
 
+### Accordi
+
+Il build riconosce gli accordi che sono **una parola isolata** (tra spazi,
+tipicamente nella riga sopra il testo) oppure **tra parentesi quadre** dentro
+il testo (`[Am]`). Funziona anche la notazione italiana (`Do`, `Lam`, `Sib`…),
+ma solo nelle righe fatte di accordi, perché "La", "Re", "Do" sono anche
+parole. Le righe di tablatura (`A|--3--`) sono ignorate.
+
+Il build scrive un rapporto in `tools/accordi.txt` (non pubblicato): tutti gli
+accordi trovati con il numero di canzoni, quelli presi da righe di testo (da
+controllare) e le canzoni senza accordi riconosciuti.
+
 ### config.json
 
 ```json
@@ -191,6 +203,12 @@ vengono scaricate per l'offline.
     lunga entra nello schermo (minimo 3 pt, oltre si scorre di lato).
   - *Originale* (predefinita su PC): dimensione piena, scorrimento orizzontale.
   - *A− / A+*: dimensione del carattere (in *Adatta* è il massimo), ricordata.
+  - **Accordi**: in cima alla canzone i diagrammi (ukulele GCEA) degli accordi
+    usati in quel file, nell'ordine in cui compaiono. Un tocco su un
+    diagramma mostra un'altra diteggiatura (fino a 4, indicate con 1/4…).
+    Il pulsante *Accordi* (o il tasto `C`) li nasconde/mostra.
+    Se nel file scrivi una diteggiatura accanto al nome (`Am7 0000`,
+    `G9: 4555`, `A = 2104`, `x` per corda muta), viene usata quella.
   - ▶ scorrimento automatico, con la velocità sul cursore accanto.
   - Lo schermo resta acceso mentre leggi (Wake Lock, dove il browser lo
     supporta).

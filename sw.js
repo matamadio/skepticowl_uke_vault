@@ -1,11 +1,11 @@
 /* Service worker: app sempre aggiornata quando c'è rete, tutto disponibile offline. */
 'use strict';
 
-var SHELL = 'vault-shell-v2';
+var SHELL = 'vault-shell-v3';
 var SONGS = 'vault-songs-v1';
 var BOOKS = 'vault-canzonieri-v1';
 var SHELL_FILES = [
-  './', 'index.html', 'app.js', 'style.css', 'songs.json', 'manifest.webmanifest',
+  './', 'index.html', 'app.js', 'chords.js', 'style.css', 'songs.json', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 
