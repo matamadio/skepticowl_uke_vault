@@ -1,0 +1,11 @@
+{
+  "_nota": "Alias -> nome canonico. Serve solo per abbreviazioni e refusi: maiuscole, accenti, spazi, punteggiatura e 'The' davanti vengono già ignorati in automatico. Le chiavi che iniziano con _ sono commenti.",
+  "APC": "A Perfect Circle",
+  "Elio": "Elio e le storie tese",
+  "Elio e le stori tese": "Elio e le storie tese",
+  "RHCP": "Red hot chili peppers",
+  "SOAD": "System of a down",
+  "De Andrè": "Fabrizio de Andrè",
+  "Branduardi": "Angelo Branduardi",
+  "Steve Miller": "Steve Miller Band"
+}
