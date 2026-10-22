@@ -143,6 +143,50 @@ def find_chords(text):
     return sorted(found, key=found.get), shapes, doubtful
 
 
+# ---------- Tag ----------
+EASY_CHORDS = {"C", "G", "Am", "F", "D", "Em", "A", "Dm", "E7", "G7", "A7", "C7", "D7",
+               "Do", "Sol", "Lam", "Fa", "Re", "Mim", "La", "Rem", "Mi7", "Sol7", "La7", "Do7", "Re7"}
+
+
+def is_instrumental(text):
+    """Quasi senza testo: al massimo 3 righe con 4+ parole che non sono accordi."""
+    lyric = 0
+    for line in text.split("\n"):
+        if TAB_LINE.match(line):
+            continue
+        words = [w for w in re.findall(r"[^\W\d_]{3,}", line)
+                 if not CHORD.fullmatch(w) and not CHORD_IT.fullmatch(w)]
+        if len(words) >= 4:
+            lyric += 1
+            if lyric > 3:
+                return False
+    return True
+
+
+def is_easy(chords):
+    return 0 < len(chords) <= 5 and set(chords) <= EASY_CHORDS
+
+
+def load_tags(path):
+    """tags.json -> lista ordinata di (nome, regole) con chiavi gia' normalizzate."""
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        raw = json.load(f)
+    out = []
+    for name, spec in raw.items():
+        if name.startswith("_") or not isinstance(spec, dict):
+            continue
+        out.append((name, {
+            "artisti": {artist_key(a): a for a in spec.get("artisti", [])},
+            "canzoni": {fold(c.strip()) for c in spec.get("canzoni", [])},
+            "cartelle": {c.casefold() for c in spec.get("cartelle", [])},
+            "escludi": {fold(c.strip()) for c in spec.get("escludi", [])},
+            "auto": spec.get("auto", ""),
+        }))
+    return out
+
+
 def search_text(text):
     """Testo compatto per la ricerca full-text: niente accenti, niente simboli."""
     return " ".join(re.sub(r"[^\w']+", " ", fold(text)).split())
@@ -349,6 +393,8 @@ def main(argv=None):
 
     songs, encodings, ids = [], collections.Counter(), {}
     chord_doubts = collections.defaultdict(list)
+    instrumental = {}
+    tags = load_tags(os.path.join(out, "tags.json"))
     for src in files:
         rel = os.path.relpath(src, source).replace(os.sep, "/")
         with open(src, "rb") as f:
@@ -372,6 +418,7 @@ def main(argv=None):
         artist, title = split_name(stem)
         artist = clean_artist(artist) or song_artists.get(fold(stem.strip()), "")
         chords, shapes, doubtful = find_chords(text)
+        instrumental[sid] = is_instrumental(text)
         for c in doubtful:
             chord_doubts[c].append(rel)
         artist = aliases.get(artist_key(artist), artist)
@@ -399,6 +446,21 @@ def main(argv=None):
         if s["artist"]:
             s["artist"] = canonical[artist_key(s["artist"])]
 
+    # Tag (dopo aver unificato gli artisti)
+    for s in songs:
+        stem = fold(os.path.splitext(s["path"].rpartition("/")[2])[0].strip())
+        mine = []
+        for name, rule in tags:
+            if stem in rule["escludi"]:
+                continue
+            if (artist_key(s["artist"]) in rule["artisti"] if s["artist"] else False) \
+                    or stem in rule["canzoni"] or s["folder"].casefold() in rule["cartelle"] \
+                    or (rule["auto"] == "strumentali" and instrumental[s["id"]]) \
+                    or (rule["auto"] == "facili" and is_easy(s["chords"])):
+                mine.append(name)
+        if mine:
+            s["tags"] = mine
+
     songs.sort(key=lambda s: s["path"].casefold())
     version = hashlib.sha1(
         json.dumps([[s["id"], s["artist"], s["title"], s["h"]] for s in songs]).encode("utf-8")
@@ -409,6 +471,7 @@ def main(argv=None):
         # sezioni nascoste finché non si sbloccano nell'app
         "hidden": sorted({s["folder"] for s in songs if s["folder"] and s["folder"].casefold()
                           in {h.casefold() for h in config["sezioni_nascoste"]}}),
+        "tags": [name for name, _ in tags],
         "songs": songs,
     }
     with open(os.path.join(out, "songs.json"), "w", encoding="utf-8", newline="\n") as f:
@@ -459,6 +522,18 @@ def main(argv=None):
         print("\nArtisti quasi uguali, forse refusi (se si', aggiungi un alias in artists.json):")
         for a, b in typos:
             print("  %s  |  %s" % (a, b))
+    if tags:
+        count = collections.Counter(t for s in songs for t in s.get("tags", []))
+        print("\nTag: " + ", ".join("%s %d" % (name, count[name]) for name, _ in tags))
+        print("  canzoni senza tag: %d" % sum(1 for s in songs if not s.get("tags")))
+        known = {artist_key(s["artist"]) for s in songs if s["artist"]}
+        stems = {fold(os.path.splitext(s["path"].rpartition("/")[2])[0].strip()) for s in songs}
+        for name, rule in tags:
+            lost = [a for k, a in rule["artisti"].items() if k not in known]
+            lost += [c for c in rule["canzoni"] | rule["escludi"] if c not in stems]
+            if lost:
+                print("  ATTENZIONE, in tags.json '%s' cita nomi che non trovo: %s" % (name, ", ".join(sorted(lost))))
+
     # Accordi: riepilogo e rapporto completo in tools/accordi.txt (non pubblicato)
     usage = collections.Counter(c for s in songs for c in s["chords"])
     print("\nAccordi: trovati in %d canzoni su %d, %d accordi diversi" % (

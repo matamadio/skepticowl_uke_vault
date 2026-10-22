@@ -15,6 +15,7 @@ build sulla cartella vera.
 | `tools/build.py` | Legge la cartella dei `.txt`, li converte in UTF-8 e genera `songs/` + `songs.json` |
 | `artists.json` | Alias degli artisti → nome giusto (es. `"APC": "A Perfect Circle"`) |
 | `song_artists.json` | Artista dei file senza ` - ` nel nome (es. `"Misirlou": "Dick Dale"`) |
+| `tags.json` | Tag per i filtri (*Cantautori*, *Demenziale*…): artisti, canzoni, cartelle |
 | `config.json` | Sezioni a parte (`cazzate`), cartella dei canzonieri e PDF da escludere |
 | `index.html`, `app.js`, `style.css` | L'app: elenco + visualizzatore |
 | `sw.js`, `manifest.webmanifest`, `icons/` | App installabile e uso offline |
@@ -139,6 +140,35 @@ vengono scaricate per l'offline.
 - L'id di una canzone dipende dal suo percorso: se **rinomini o sposti** un
   file, preferito, contatore e ultimo utilizzo di quella canzone ripartono da
   zero.
+
+### Tag (tags.json)
+
+I filtri a chip sotto la ricerca (*Strumentali*, *Cantautori*, *Demenziale*…)
+vengono da `tags.json`, che si modifica a mano come `artists.json`. Per ogni
+tag:
+
+```json
+"Cantautori": {
+  "artisti": ["Fabrizio de Andrè", "Franco Battiato"],
+  "canzoni": ["Bob Dylan - Hurricane"],
+  "cartelle": ["cazzate"],
+  "escludi": ["Franco Battiato - Strumentale X"]
+}
+```
+
+- `artisti`: tutti i brani di quegli artisti (maiuscole, accenti e "The" non
+  contano); `canzoni`: singoli file, senza `.txt`; `cartelle`: tutta una
+  cartella; `escludi`: file da togliere dal tag.
+- Due tag si calcolano da soli: `"auto": "strumentali"` (brani quasi senza
+  testo) e `"auto": "facili"` (al massimo 5 accordi semplici). Anche lì si
+  possono aggiungere `canzoni` o `escludi`.
+- L'ordine dei tag nel file è l'ordine dei chip nel sito.
+- Il build stampa quante canzoni ha ogni tag e **avvisa se un nome in
+  `tags.json` non corrisponde a nessun artista o file** (refusi).
+
+Nel sito: un tocco su un chip filtra (un altro tocco lo toglie), e si combina
+con ricerca, preferiti e ordinamento; i tag compaiono anche sotto ogni canzone
+e scrivendo il nome di un tag nella ricerca si trovano le sue canzoni.
 
 ### Accordi
 
