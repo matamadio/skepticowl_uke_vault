@@ -657,8 +657,10 @@
       var sid = link.getAttribute('data-open');
       state.plays[sid] = (state.plays[sid] || 0) + 1;
       save();
-      cameFromList = true;
     }
+    // qualsiasi canzone aperta da una pagina dell'app (elenco, playlist,
+    // ricerca dentro la playlist, playlist condivisa): "indietro" torna lì
+    if (e.target.closest('a[href^="#/song/"]')) cameFromList = true;
   });
 
   els.q.addEventListener('input', renderSoon);
