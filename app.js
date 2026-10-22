@@ -84,8 +84,9 @@
     var favOnly = els.favOnly.getAttribute('aria-pressed') === 'true';
     var folder = els.folder.value;
     var out = [];
-    for (var i = 0; i < songs.length; i++) {
-      var s = songs[i];
+    var list = visibleSongs();
+    for (var i = 0; i < list.length; i++) {
+      var s = list[i];
       if (favOnly && !state.favs[s.id]) continue;
       if (folder !== '*' && s.folder !== folder) continue;
       var hitText = false, ok = true;
@@ -127,8 +128,9 @@
 
     els.list.innerHTML = items.length ? html.join('') :
       '<p class="empty">' + (songs.length ? 'Nessuna canzone trovata.' : 'Nessuna canzone: lancia tools/build.py.') + '</p>';
-    els.count.textContent = items.length === songs.length ?
-      songs.length + ' canzoni' : items.length + ' di ' + songs.length + ' canzoni';
+    var total = visibleSongs().length;
+    els.count.textContent = items.length === total ?
+      total + ' canzoni' : items.length + ' di ' + total + ' canzoni';
   }
 
   function renderItems(items, sort, html) {
@@ -540,6 +542,7 @@
       });
       Object.keys(inc.settings).forEach(function (k) { state.settings[k] = inc.settings[k]; });
       save();
+      fillFolders();
       applySettings();
       render();
       menuMsg.textContent = 'Importato: ' + n + ' preferiti uniti a quelli già presenti.';
@@ -640,9 +643,48 @@
     applyLayout();
   }
 
+  // ---------- Sezioni nascoste (es. cazzate) ----------
+  // Si sbloccano/ribloccano con 5 tocchi veloci sul titolo; la scelta resta
+  // su questo dispositivo. Non è una protezione: i file restano pubblici.
+  var hiddenSections = [];
+  function isHidden(s) { return !setting('unlocked', false) && hiddenSections.indexOf(s.folder) !== -1; }
+  function visibleSongs() { return songs.filter(function (s) { return !isHidden(s); }); }
+
+  var taps = [];
+  document.querySelector('#listView h1').addEventListener('click', function () {
+    var now = Date.now();
+    taps = taps.filter(function (t) { return now - t < 2500; });
+    taps.push(now);
+    if (taps.length < 5 || !hiddenSections.length) return;
+    taps = [];
+    var on = !setting('unlocked', false);
+    setSetting('unlocked', on);
+    fillFolders();
+    render();
+    toast(on ? '\uD83E\uDD89 Sezione segreta sbloccata' : '\uD83E\uDD89 Sezione segreta nascosta');
+  });
+
+  var toastTimer = 0;
+  function toast(msg) {
+    var t = $('toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'toast';
+      t.className = 'toast';
+      t.setAttribute('role', 'status');
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('on'); }, 2200);
+  }
+
   function fillFolders() {
+    var cur = els.folder.value;
+    while (els.folder.options.length > 1) els.folder.remove(1);
     var seen = {};
-    songs.forEach(function (s) { seen[s.folder] = (seen[s.folder] || 0) + 1; });
+    visibleSongs().forEach(function (s) { seen[s.folder] = (seen[s.folder] || 0) + 1; });
     Object.keys(seen).sort(function (a, b) {
       if (!a) return -1; if (!b) return 1;
       return collator.compare(a, b);
@@ -654,6 +696,8 @@
     });
     // Con una sola cartella il filtro non serve
     els.folder.closest('label').hidden = Object.keys(seen).length < 2;
+    els.folder.value = cur;
+    if (els.folder.value !== cur) els.folder.value = '*';
   }
 
   fetch('songs.json', { cache: 'no-cache' }).then(function (r) {
@@ -662,6 +706,7 @@
   }).then(function (data) {
     meta = data;
     songs = data.songs || [];
+    hiddenSections = data.hidden || [];
     songs.forEach(function (s) {
       s._key = foldSearch(s.artist + ' ' + s.title + ' ' + s.folder);
       s._text = ' ' + (s.text || '') + ' ';

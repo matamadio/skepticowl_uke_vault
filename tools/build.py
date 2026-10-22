@@ -159,7 +159,8 @@ def is_inside(path, folder):
 
 
 def load_config(path):
-    config = {"sezioni": ["cazzate"], "canzonieri": "canzonieri", "canzonieri_esclusi": []}
+    config = {"sezioni": ["cazzate"], "sezioni_nascoste": ["cazzate"],
+              "canzonieri": "canzonieri", "canzonieri_esclusi": []}
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
             config.update({k: v for k, v in json.load(f).items() if not k.startswith("_")})
@@ -326,6 +327,9 @@ def main(argv=None):
     data = {
         "version": version,
         "generated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        # sezioni nascoste finché non si sbloccano nell'app
+        "hidden": sorted({s["folder"] for s in songs if s["folder"] and s["folder"].casefold()
+                          in {h.casefold() for h in config["sezioni_nascoste"]}}),
         "songs": songs,
     }
     with open(os.path.join(out, "songs.json"), "w", encoding="utf-8", newline="\n") as f:

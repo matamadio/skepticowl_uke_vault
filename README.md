@@ -145,6 +145,7 @@ vengono scaricate per l'offline.
 ```json
 {
   "sezioni": ["cazzate"],
+  "sezioni_nascoste": ["cazzate"],
   "canzonieri": "canzonieri",
   "canzonieri_esclusi": ["Bozza vecchia", "*scansione*"]
 }
@@ -152,6 +153,11 @@ vengono scaricate per l'offline.
 
 - `sezioni`: sottocartelle di `Uke` mostrate ognuna in una sezione a parte,
   sotto l'elenco principale (solo i loro `.txt`, non le loro sottocartelle).
+- `sezioni_nascoste`: sezioni che nell'app restano nascoste (anche dalla
+  ricerca) finché non le sblocchi: **tocca 5 volte di fila il titolo**
+  "Skepticowl's song vault" in cima all'elenco. Altri 5 tocchi le
+  rinascondono. La scelta vale solo per quel dispositivo. È un trucco, non
+  una protezione: i file restano comunque pubblici nel repository.
 - `canzonieri`: la sottocartella con i PDF della pagina *Canzonieri*.
 - `canzonieri_esclusi`: PDF da non pubblicare, con o senza `.pdf`, senza
   badare alle maiuscole; `*` e `?` funzionano come jolly. GitHub rifiuta i
@@ -164,7 +170,8 @@ vengono scaricate per l'offline.
   Ordine per artista (raggruppato), titolo, ultimo utilizzo o più cliccate.
   Filtro *solo preferiti* (e per cartella, che compare solo se il build ha
   incluso le sottocartelle). La stellina segna i preferiti. Le canzoni di
-  `cazzate` stanno in una sezione a parte, in fondo.
+  `cazzate` stanno in una sezione a parte, in fondo, nascosta finché non la
+  sblocchi (vedi `sezioni_nascoste` sopra).
 - **Canzonieri**: la scheda in alto apre l'elenco dei PDF (con ricerca); un
   tocco li apre nel lettore PDF del browser. Quelli aperti restano
   disponibili offline.
