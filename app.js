@@ -159,7 +159,7 @@
   }
 
   // ---------- Tag (da tags.json, applicati da build.py) ----------
-  // Più tag insieme si combinano in AND: es. Demenziale + Italiani.
+  // Più tag insieme si sommano (OR): es. Pop + Alternative = canzoni dell'uno o dell'altro.
   var tagNames = [];
   function selectedTags() {
     var v = setting('tags', null);
@@ -168,8 +168,8 @@
   }
   function hasTags(s, list) {
     if (!s.tags) return false;
-    for (var i = 0; i < list.length; i++) if (s.tags.indexOf(list[i]) === -1) return false;
-    return true;
+    for (var i = 0; i < list.length; i++) if (s.tags.indexOf(list[i]) !== -1) return true;
+    return false;
   }
   function renderTagChips() {
     var box = $('tagChips'), visible = visibleSongs(), all = {}, count = {};
@@ -177,18 +177,17 @@
     // tag non più disponibili (es. solo nella sezione nascosta): via dalla selezione
     var sel = selectedTags().filter(function (t) { return all[t]; });
     if (sel.length !== selectedTags().length) setSetting('tags', sel);
-    // per ogni tag: quante canzoni resterebbero aggiungendolo alla selezione
+    // per ogni tag: quante canzoni ha (tra quelle visibili)
     visible.forEach(function (s) {
-      if (!hasTags(s, sel)) return;
       (s.tags || []).forEach(function (t) { count[t] = (count[t] || 0) + 1; });
     });
-    var names = tagNames.filter(function (t) { return sel.indexOf(t) !== -1 || count[t]; });
+    var names = tagNames.filter(function (t) { return count[t]; });
     box.hidden = !tagNames.some(function (t) { return all[t]; });
     box.innerHTML = (sel.length ? '<button type="button" class="chip clear" data-tag-clear aria-label="Togli tutti i tag">&#10005;</button>' : '') +
       names.map(function (t) {
         var on = sel.indexOf(t) !== -1;
         return '<button type="button" class="chip" data-tag="' + escapeHtml(t) + '" aria-pressed="' + on + '">' +
-          escapeHtml(t) + (on ? '' : ' <span class="n">' + count[t] + '</span>') + '</button>';
+          escapeHtml(t) + ' <span class="n">' + count[t] + '</span></button>';
       }).join('');
   }
   $('tagChips').addEventListener('click', function (e) {
