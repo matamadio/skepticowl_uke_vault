@@ -59,6 +59,11 @@
     ],
     "cartelle": [
       "cazzate"
+    ],
+    "canzoni": [
+      "Hai messo incinta una scema",
+      "Non mi dispiace non me ne pento",
+      "Satan is a friend of mine"
     ]
   },
   "Classic rock": {
@@ -360,10 +365,7 @@
       "Woodkid"
     ],
     "canzoni": [
-      "Hai messo incinta una scema",
-      "Hunters of stars",
-      "Non mi dispiace non me ne pento",
-      "Satan is a friend of mine"
+      "Hunters of stars"
     ]
   },
   "Italiani": {
@@ -404,6 +406,10 @@
       "Velvet",
       "La Casbah",
       "Loretta Goggi"
+    ],
+    "canzoni": [
+      "Hai messo incinta una scema",
+      "Non mi dispiace non me ne pento"
     ]
   }
 }
