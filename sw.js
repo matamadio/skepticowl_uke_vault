@@ -3,6 +3,7 @@
 
 var SHELL = 'vault-shell-v1';
 var SONGS = 'vault-songs-v1';
+var BOOKS = 'vault-canzonieri-v1';
 var SHELL_FILES = [
   './', 'index.html', 'app.js', 'style.css', 'songs.json', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
@@ -16,7 +17,7 @@ self.addEventListener('install', function (e) {
 
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.filter(function (k) { return k !== SHELL && k !== SONGS; })
+    return Promise.all(keys.filter(function (k) { return k !== SHELL && k !== SONGS && k !== BOOKS; })
       .map(function (k) { return caches.delete(k); }));
   }).then(function () { return self.clients.claim(); }));
 });
@@ -28,11 +29,13 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== location.origin) return;
 
   // Canzoni: l'URL contiene ?v=<hash del contenuto>, quindi la cache non invecchia
-  if (url.pathname.indexOf('/songs/') !== -1) {
-    e.respondWith(caches.open(SONGS).then(function (c) {
+  // Canzonieri (PDF): salvati per l'offline solo quando li apri
+  var isSong = url.pathname.indexOf('/songs/') !== -1;
+  if (isSong || url.pathname.indexOf('/canzonieri/') !== -1) {
+    e.respondWith(caches.open(isSong ? SONGS : BOOKS).then(function (c) {
       return c.match(req).then(function (hit) {
         return hit || fetch(req).then(function (res) {
-          if (res.ok) c.put(req, res.clone());
+          if (res.status === 200) c.put(req, res.clone());
           return res;
         });
       });

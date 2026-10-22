@@ -103,11 +103,35 @@
     return collator.compare(a.s.title, b.s.title) || collator.compare(a.s.artist, b.s.artist);
   }
 
+  function sectionLabel(f) { return f.charAt(0).toUpperCase() + f.slice(1); }
+
   function render() {
+    if (page === 'books') { renderBooks(); return; }
     var items = filtered();
     var sort = els.sort.value;
     var html = [];
 
+    // Cartella principale prima, poi ogni sezione (es. cazzate) a parte
+    var bySection = {};
+    items.forEach(function (it) { (bySection[it.s.folder] = bySection[it.s.folder] || []).push(it); });
+    Object.keys(bySection).sort(function (a, b) {
+      if (!a) return -1; if (!b) return 1;
+      return collator.compare(a, b);
+    }).forEach(function (f) {
+      if (f) {
+        html.push('<h2 class="section">' + escapeHtml(sectionLabel(f)) +
+          '<span class="n">' + bySection[f].length + '</span></h2>');
+      }
+      renderItems(bySection[f], sort, html);
+    });
+
+    els.list.innerHTML = items.length ? html.join('') :
+      '<p class="empty">' + (songs.length ? 'Nessuna canzone trovata.' : 'Nessuna canzone: lancia tools/build.py.') + '</p>';
+    els.count.textContent = items.length === songs.length ?
+      songs.length + ' canzoni' : items.length + ' di ' + songs.length + ' canzoni';
+  }
+
+  function renderItems(items, sort, html) {
     if (sort === 'artist') {
       items.sort(function (a, b) {
         var ea = !a.s.artist, eb = !b.s.artist;
@@ -138,17 +162,46 @@
       });
       items.forEach(function (it) { html.push(row(it, true, sort)); });
     }
+  }
 
-    els.list.innerHTML = items.length ? html.join('') :
-      '<p class="empty">' + (songs.length ? 'Nessuna canzone trovata.' : 'Nessuna canzone: lancia tools/build.py.') + '</p>';
-    els.count.textContent = items.length === songs.length ?
-      songs.length + ' canzoni' : items.length + ' di ' + songs.length + ' canzoni';
+  // ---------- Canzonieri (PDF) ----------
+  var books = [];
+  var page = 'songs';
+
+  function bookUrl(b) { return 'canzonieri/' + encodeURIComponent(b.path) + '?v=' + b.h; }
+  function formatSize(n) {
+    return n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  }
+
+  function renderBooks() {
+    var words = foldSearch(els.q.value).split(' ').filter(Boolean);
+    var items = books.filter(function (b) {
+      return words.every(function (w) { return b._key.indexOf(w) !== -1; });
+    });
+    els.list.innerHTML = items.length ? items.map(function (b) {
+      return '<div class="song book"><span class="pdf" aria-hidden="true">PDF</span>' +
+        '<a href="' + bookUrl(b) + '" target="_blank" rel="noopener"><span class="t">' + escapeHtml(b.title) + '</span>' +
+        '<span class="m">' + formatSize(b.size) + ' · ' + new Date(b.mtime).toLocaleDateString('it-IT') + '</span></a></div>';
+    }).join('') : '<p class="empty">' + (books.length ? 'Nessun canzoniere trovato.' : 'Nessun canzoniere.') + '</p>';
+    els.count.textContent = items.length === books.length ?
+      books.length + ' canzonieri' : items.length + ' di ' + books.length + ' canzonieri';
+  }
+
+  function setPage(p) {
+    var changed = p !== page;
+    page = p;
+    document.querySelectorAll('.tabs a').forEach(function (a) {
+      if (a.getAttribute('data-page') === p) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+    $('songFilters').hidden = p === 'books';
+    els.q.placeholder = p === 'books' ? 'Cerca canzoniere…' : 'Cerca artista o titolo…';
+    if (changed) { render(); window.scrollTo(0, 0); updateHeadHeight(); }
   }
 
   function row(it, showArtist, sort) {
     var s = it.s, fav = !!state.favs[s.id], m = [];
     if (showArtist && s.artist) m.push(escapeHtml(s.artist));
-    if (s.folder) m.push(escapeHtml(s.folder));
     if (sort === 'recent' && state.last[s.id]) m.push(relTime(state.last[s.id]));
     if (sort === 'plays' && state.plays[s.id]) m.push(state.plays[s.id] + (state.plays[s.id] === 1 ? ' apertura' : ' aperture'));
     if (it.hitText) m.push('<span class="hit">nel testo</span>');
@@ -422,8 +475,9 @@
   // ---------- Routing ----------
   function route() {
     var m = location.hash.match(/^#\/song\/([\w-]+)/);
-    if (m) openSong(m[1]);
-    else showList();
+    if (m) { openSong(m[1]); return; }
+    showList();
+    setPage(location.hash === '#/canzonieri' && books.length ? 'books' : 'songs');
   }
   window.addEventListener('hashchange', route);
 
@@ -523,6 +577,56 @@
     }).catch(function () { /* niente offline */ });
   }
 
+  // ---------- Scorrimento rapido (touch) ----------
+  // Sul telefono la barra di scorrimento non si può trascinare: compare una
+  // maniglia sul bordo destro che, trascinata, scorre tutta la pagina.
+  (function () {
+    if (!window.matchMedia('(pointer: coarse)').matches) return;
+    var track = document.createElement('div');
+    track.className = 'fastscroll';
+    track.innerHTML = '<div class="thumb" aria-hidden="true"></div>';
+    document.body.appendChild(track);
+    var thumb = track.firstChild, dragging = false, hideTimer = 0, grab = 0;
+
+    function maxScroll() { return document.documentElement.scrollHeight - window.innerHeight; }
+    function range() { return track.clientHeight - thumb.offsetHeight; }
+    function place() {
+      var max = maxScroll();
+      thumb.style.transform = 'translateY(' + (max > 0 ? window.scrollY / max * range() : 0) + 'px)';
+    }
+    function show() {
+      if (maxScroll() < window.innerHeight * 2) return; // pagina corta: non serve
+      place();
+      track.classList.add('on');
+      clearTimeout(hideTimer);
+      if (!dragging) hideTimer = setTimeout(function () { track.classList.remove('on'); }, 1500);
+    }
+    window.addEventListener('scroll', function () { if (!dragging) show(); }, { passive: true });
+    thumb.addEventListener('pointerdown', function (e) {
+      dragging = true;
+      grab = e.clientY - thumb.getBoundingClientRect().top;
+      thumb.setPointerCapture(e.pointerId);
+      track.classList.add('on', 'drag');
+      clearTimeout(hideTimer);
+      e.preventDefault();
+    });
+    thumb.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      var y = e.clientY - grab - track.getBoundingClientRect().top;
+      var ratio = Math.max(0, Math.min(1, y / range()));
+      window.scrollTo(0, ratio * maxScroll());
+      place();
+    });
+    function end() {
+      if (!dragging) return;
+      dragging = false;
+      track.classList.remove('drag');
+      show();
+    }
+    thumb.addEventListener('pointerup', end);
+    thumb.addEventListener('pointercancel', end);
+  })();
+
   // ---------- Avvio ----------
   function applySettings() {
     els.inText.checked = !!setting('inText', false);
@@ -565,6 +669,13 @@
     });
     fillFolders();
     applySettings();
+    return fetch('canzonieri.json', { cache: 'no-cache' }).then(function (r) {
+      return r.ok ? r.json() : { items: [] };
+    }).catch(function () { return { items: [] }; });
+  }).then(function (data) {
+    books = (data && data.items) || [];
+    books.forEach(function (b) { b._key = foldSearch(b.title); });
+    $('tabs').hidden = !books.length;
     render();
     updateHeadHeight();
     route();
