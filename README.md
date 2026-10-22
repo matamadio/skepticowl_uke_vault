@@ -216,6 +216,10 @@ controllare) e le canzoni senza accordi riconosciuti.
   incluso le sottocartelle). La stellina segna i preferiti. Le canzoni di
   `cazzate` stanno in una sezione a parte, in fondo, nascosta finché non la
   sblocchi (vedi `sezioni_nascoste` sopra).
+- **Ultimate Guitar**: se la ricerca non trova nulla compare il pulsante *Cerca
+  «…» su Ultimate Guitar*, che apre la ricerca di UG in una nuova scheda (in
+  fondo ai risultati c'è anche un link più discreto). UG non permette di
+  essere incorporato nell'app né offre un'API pubblica, quindi è un link.
 - **Canzonieri**: la scheda in alto apre l'elenco dei PDF (con ricerca); un
   tocco li apre nel lettore PDF del browser. Quelli aperti restano
   disponibili offline.
