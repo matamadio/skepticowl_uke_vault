@@ -167,8 +167,8 @@ tag:
   `tags.json` non corrisponde a nessun artista o file** (refusi).
 
 Nel sito: un tocco su un chip filtra (un altro tocco lo toglie); più chip insieme
-si combinano (es. *Demenziale* + *Italiani* = canzoni con entrambi i tag), ✕ li
-toglie tutti, e il numero su ogni chip dice quante canzoni restano aggiungendolo. Si combina
+si sommano (es. *Pop* + *Alternative* = canzoni dell'uno o dell'altro), ✕ li
+toglie tutti. Si combina
 con ricerca, preferiti e ordinamento; i tag compaiono anche sotto ogni canzone
 e scrivendo il nome di un tag nella ricerca si trovano le sue canzoni.
 
