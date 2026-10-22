@@ -83,6 +83,7 @@
     <h2>Skepticowl's song vault</h2>
     <p id="info" class="muted"></p>
     <p id="offline" class="muted"></p>
+    <div class="buttons"><button id="menuInstall" type="button" hidden>Installa come app</button></div>
     <h3>Stato su questo dispositivo</h3>
     <p class="muted">Preferiti, contatori, ultimo utilizzo e impostazioni restano solo in questo browser. Esportali per spostarli su un altro dispositivo.</p>
     <div class="buttons">
@@ -94,6 +95,13 @@
     <div class="buttons end"><button value="close">Chiudi</button></div>
   </form>
 </dialog>
+
+<div id="installBar" class="installbar" role="dialog" aria-label="Installa l'app" hidden>
+  <img src="icons/icon-192.png" alt="" width="40" height="40">
+  <div class="installtext"><strong>Installa Song vault</strong><span>Si apre come un'app e funziona anche offline.</span></div>
+  <button id="installNo" type="button">Non ora</button>
+  <button id="installYes" type="button" class="primary">Installa</button>
+</div>
 
 <script src="app.js"></script>
 </body>
