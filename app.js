@@ -138,12 +138,24 @@
       renderItems(bySection[f], sort, html);
     });
 
-    els.list.innerHTML = items.length ? html.join('') :
-      '<p class="empty">' + (songs.length ? 'Nessuna canzone trovata.' : 'Nessuna canzone: lancia tools/build.py.') + '</p>';
+    var q = els.q.value.trim();
+    els.list.innerHTML = items.length ? html.join('') + (q ? ugLink(q, false) : '') :
+      '<p class="empty">' + (songs.length ? 'Nessuna canzone trovata.' : 'Nessuna canzone: lancia tools/build.py.') + '</p>' +
+      (q ? ugLink(q, true) : '');
     var total = visibleSongs().length;
     els.count.textContent = items.length === total ?
       total + ' canzoni' : items.length + ' di ' + total + ' canzoni';
     renderTagChips();
+  }
+
+  // ---------- Ricerca esterna su Ultimate Guitar ----------
+  // UG non ha API pubbliche e non si lascia incorporare in un iframe:
+  // si apre la sua pagina di ricerca in una nuova scheda.
+  function ugLink(q, prominent) {
+    var url = 'https://www.ultimate-guitar.com/search.php?search_type=title&value=' + encodeURIComponent(q);
+    return '<p class="ug' + (prominent ? ' big' : '') + '"><a href="' + url + '" target="_blank" rel="noopener">' +
+      (prominent ? 'Cerca «' + escapeHtml(q) + '» su Ultimate Guitar' : 'Non è quella giusta? Cerca «' + escapeHtml(q) +
+      '» su Ultimate Guitar') + ' &#8599;</a></p>';
   }
 
   // ---------- Tag (da tags.json, applicati da build.py) ----------

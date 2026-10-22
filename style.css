@@ -450,3 +450,16 @@ svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
 }
 .song .m .tg { color: var(--accent); opacity: .8; }
 .tagchips .chip.clear { padding: 3px 10px; color: var(--accent); border-color: var(--accent); }
+
+/* Ricerca su Ultimate Guitar */
+.ug { text-align: center; margin: 14px 16px 24px; font-size: 14px; }
+.ug a { color: var(--accent); }
+.ug.big a {
+  display: inline-block;
+  padding: 10px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  text-decoration: none;
+  font-size: 15px;
+}
