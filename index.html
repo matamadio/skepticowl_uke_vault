@@ -18,7 +18,7 @@
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="style.css?v=60d0da8b">
+<link rel="stylesheet" href="style.css?v=7ee62089">
 </head>
 <body>
 
@@ -96,10 +96,28 @@
       </div>
     </div>
   </header>
+  <div id="localBar" class="localbar" hidden></div>
   <div id="chordStrip" class="chordstrip" hidden></div>
   <div id="scroller" class="scroller"><pre id="text"></pre></div>
   <section id="ytBox" class="ytbox" aria-label="Video"></section>
 </section>
+
+<dialog id="rndDialog">
+  <form method="dialog">
+    <h2>Playlist casuale</h2>
+    <h3>Quante canzoni?</h3>
+    <div class="seg rndn" role="group" aria-label="Numero di canzoni">
+      <button type="button" data-n="10" aria-pressed="false">10</button>
+      <button type="button" data-n="20" aria-pressed="true">20</button>
+      <button type="button" data-n="30" aria-pressed="false">30</button>
+      <button type="button" data-n="50" aria-pressed="false">50</button>
+    </div>
+    <h3>Da quali canzoni?</h3>
+    <label class="check rndsrc"><input type="radio" name="rndsrc" value="all"> tutte (<span id="rndAll"></span>)</label>
+    <label class="check rndsrc"><input type="radio" name="rndsrc" value="filt"> con i filtri dell'elenco: <span id="rndFiltDesc"></span> (<span id="rndFilt"></span>)</label>
+    <div class="buttons end"><button value="cancel">Annulla</button><button type="button" class="primary" id="rndGo">Crea</button></div>
+  </form>
+</dialog>
 
 <dialog id="plDialog">
   <form method="dialog">
@@ -124,6 +142,7 @@
       <button type="button" data-theme-set="light">Chiaro</button>
       <button type="button" data-theme-set="dark">Scuro</button>
     </div>
+    <div class="buttons"><button id="menuImportSong" type="button">Importa canzone (da Ultimate Guitar…)</button></div>
     <h3>Stato su questo dispositivo</h3>
     <p class="muted">Preferiti, contatori, ultimo utilizzo e impostazioni restano solo in questo browser. Esportali per spostarli su un altro dispositivo.</p>
     <div class="buttons">
@@ -144,6 +163,6 @@
 </div>
 
 <script src="chords.js?v=54b74c6f"></script>
-<script src="app.js?v=e4332dde"></script>
+<script src="app.js?v=bea89bb3"></script>
 </body>
 </html>

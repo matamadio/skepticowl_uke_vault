@@ -10,7 +10,7 @@
 
   // ---------- Stato per dispositivo (localStorage) ----------
   function emptyState() {
-    return { favs: {}, plays: {}, last: {}, settings: {}, playlists: [] };
+    return { favs: {}, plays: {}, last: {}, settings: {}, playlists: [], local: [] };
   }
   function loadState() {
     try {
@@ -25,6 +25,14 @@
     ['favs', 'plays', 'last', 'settings'].forEach(function (k) {
       if (s[k] && typeof s[k] === 'object' && !Array.isArray(s[k])) out[k] = s[k];
     });
+    if (Array.isArray(s.local)) {
+      out.local = s.local.filter(function (l) {
+        return l && typeof l.id === 'string' && typeof l.text === 'string';
+      }).map(function (l) {
+        return { id: l.id, artist: String(l.artist || ''), title: String(l.title || 'Senza titolo'), text: l.text,
+          updated: Number(l.updated) || 0 };
+      });
+    }
     if (Array.isArray(s.playlists)) {
       out.playlists = s.playlists.filter(function (p) {
         return p && typeof p.id === 'string' && Array.isArray(p.songs);
@@ -121,6 +129,7 @@
     if (page === 'playlists') { renderPlaylists(); return; }
     if (page === 'playlist') { renderPlaylist(); return; }
     if (page === 'shared') { renderShared(); return; }
+    if (page === 'import') { renderImport(); return; }
     var items = filtered();
     var sort = els.sort.value;
     var html = [];
@@ -156,7 +165,8 @@
     var url = 'https://www.ultimate-guitar.com/search.php?search_type=title&value=' + encodeURIComponent(q);
     return '<p class="ug' + (prominent ? ' big' : '') + '"><a href="' + url + '" target="_blank" rel="noopener">' +
       (prominent ? 'Cerca «' + escapeHtml(q) + '» su Ultimate Guitar' : 'Non è quella giusta? Cerca «' + escapeHtml(q) +
-      '» su Ultimate Guitar') + ' &#8599;</a></p>';
+      '» su Ultimate Guitar') + ' &#8599;</a>' +
+      (prominent ? '<br><small>Trovata? <a href="#/importa">Importala qui</a> copiando e incollando il testo.</small>' : '') + '</p>';
   }
 
   // ---------- Tag (da tags.json, applicati da build.py) ----------
@@ -316,6 +326,7 @@
       else a.removeAttribute('aria-current');
     });
     $('songFilters').hidden = p !== 'songs';
+    els.q.hidden = p === 'import';
     els.q.placeholder = {
       books: 'Cerca canzoniere…',
       playlists: 'Cerca playlist…',
@@ -353,7 +364,8 @@
       var k = foldSearch(p.name);
       return words.every(function (w) { return k.indexOf(w) !== -1; });
     }).sort(function (a, b) { return collator.compare(a.name, b.name); });
-    els.list.innerHTML = '<div class="pltools"><button type="button" class="primary" data-pl-new>+ Nuova playlist</button></div>' +
+    els.list.innerHTML = '<div class="pltools"><button type="button" class="primary" data-pl-new>+ Nuova playlist</button>' +
+      '<button type="button" data-pl-random>&#127922; Playlist casuale</button></div>' +
       (items.length ? items.map(function (p) {
         return '<div class="song"><span class="plicon" aria-hidden="true">&#9776;</span>' +
           '<a href="#/playlist/' + p.id + '"><span class="t">' + escapeHtml(p.name) + '</span>' +
@@ -371,6 +383,9 @@
       '<button type="button" class="icon" data-pl-rename title="Rinomina" aria-label="Rinomina">&#9998;</button>' +
       '<button type="button" class="icon" data-pl-share title="Condividi" aria-label="Condividi">' + SHARE_ICON + '</button>' +
       '<button type="button" class="icon" data-pl-delete title="Elimina playlist" aria-label="Elimina playlist">&#128465;</button></div>'];
+    if (p.songs.length > 1) {
+      html.push('<div class="pltools"><button type="button" data-pl-shuffle>' + SHUFFLE_ICON + ' Mescola</button></div>');
+    }
     if (p.songs.length) {
       html.push('<div class="plsongs" id="plSongs">');
       p.songs.forEach(function (sid, i) {
@@ -475,9 +490,15 @@
   }
 
   els.list.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-pl-new],[data-pl-rename],[data-pl-delete],[data-pl-up],[data-pl-down],[data-pl-remove],[data-pl-add],[data-pl-share],[data-pl-save]');
+    var t = e.target.closest('[data-pl-new],[data-pl-rename],[data-pl-delete],[data-pl-up],[data-pl-down],[data-pl-remove],[data-pl-add],[data-pl-share],[data-pl-save],[data-pl-random],[data-pl-shuffle]');
     if (!t) return;
     var p = findPl(openPl), name;
+    if (t.hasAttribute('data-pl-random')) { openRandomDialog(); return; }
+    if (t.hasAttribute('data-pl-shuffle')) {
+      if (p) { shuffle(p.songs); touchPl(p); toast('Playlist mescolata'); }
+      var y0 = window.scrollY; render(); window.scrollTo(0, y0);
+      return;
+    }
     if (t.hasAttribute('data-pl-save')) { saveShared(); return; }
     if (t.hasAttribute('data-pl-share')) { if (p) sharePl(p); return; }
     if (t.hasAttribute('data-pl-new')) {
@@ -624,6 +645,7 @@
     if (sort === 'recent' && state.last[s.id]) m.push(relTime(state.last[s.id]));
     if (sort === 'plays' && state.plays[s.id]) m.push(state.plays[s.id] + (state.plays[s.id] === 1 ? ' apertura' : ' aperture'));
     if (it.hitText) m.push('<span class="hit">nel testo</span>');
+    if (s.local) m.push('<span class="hit">importata</span>');
     if (s.tags) m.push('<span class="tg">' + s.tags.map(escapeHtml).join(' · ') + '</span>');
     return '<div class="song">' +
       '<button class="star' + (fav ? ' on' : '') + '" type="button" data-fav="' + s.id + '" aria-pressed="' + fav +
@@ -789,6 +811,7 @@
       els.vTitle.textContent = 'Canzone non trovata';
       els.vArtist.textContent = '';
       $('ytBox').innerHTML = '';
+      $('localBar').hidden = true;
       showMessage('Questa canzone non esiste più (forse è stata rinominata).');
       return;
     }
@@ -805,10 +828,11 @@
     requestWakeLock();
 
     var token = ++loadToken;
-    fetch(songUrl(s)).then(function (r) {
+    renderLocalBar(s);
+    (s.local ? Promise.resolve(s.raw) : fetch(songUrl(s)).then(function (r) {
       if (!r.ok) throw new Error(r.status);
       return r.text();
-    }).then(function (t) {
+    })).then(function (t) {
       if (token !== loadToken) return;
       maxCols = columns(t);
       els.text.className = '';
@@ -998,6 +1022,13 @@
     var m = location.hash.match(/^#\/song\/([\w-]+)(?:\?pl=([\w-]+))?/);
     if (m) { openSong(m[1], m[2]); return; }
     showList();
+    var im = location.hash.match(/^#\/importa(?:\/([\w-]+))?$/);
+    if (im) {
+      if (impFor !== (im[1] || '')) startImport(im[1] || '');
+      setPage('import', location.hash);
+      render();
+      return;
+    }
     if (/^#\/condivisa\?/.test(location.hash)) {
       shared = parseShared(location.hash);
       setPage('shared', location.hash);
@@ -1049,7 +1080,7 @@
   $('exportBtn').addEventListener('click', function () {
     var data = JSON.stringify({ app: 'skepticowl-vault', version: 1, exported: new Date().toISOString(),
       favs: state.favs, plays: state.plays, last: state.last, settings: state.settings,
-      playlists: state.playlists }, null, 1);
+      playlists: state.playlists, local: state.local }, null, 1);
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
     a.download = 'skepticowl-vault-stato-' + new Date().toISOString().slice(0, 10) + '.json';
@@ -1078,6 +1109,13 @@
         if (v > (state.last[k] || 0)) state.last[k] = v;
       });
       Object.keys(inc.settings).forEach(function (k) { state.settings[k] = inc.settings[k]; });
+      // Canzoni importate: stessa id -> vince la versione modificata per ultima
+      inc.local.forEach(function (l) {
+        var i = localIndex(l.id);
+        if (i === -1) state.local.push(l);
+        else if (l.updated > state.local[i].updated) state.local[i] = l;
+        addLocalSong(l);
+      });
       // Playlist: stessa id -> vince la versione modificata per ultima
       inc.playlists.forEach(function (p) {
         var mine = findPl(p.id);
@@ -1253,6 +1291,249 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
   applyTheme();
 
+  // ---------- Playlist casuale e "Mescola" ----------
+  var SHUFFLE_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><path d="M16 3h5v5M4 20 21 3' +
+    'M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>';
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i];
+      a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  // Canzoni che rispettano i filtri dell'elenco (tag, preferiti, cartella), senza la ricerca
+  function filteredPool() {
+    var sel = selectedTags(), fav = !!setting('favOnly', false), folder = setting('folder', '*');
+    return visibleSongs().filter(function (s) {
+      return (!sel.length || hasTags(s, sel)) && (!fav || state.favs[s.id]) && (folder === '*' || s.folder === folder);
+    });
+  }
+  function filtersLabel() {
+    var parts = [], sel = selectedTags(), folder = setting('folder', '*');
+    if (sel.length) parts.push(sel.join(', '));
+    if (setting('favOnly', false)) parts.push('solo preferiti');
+    if (folder !== '*') parts.push('cartella ' + folderLabel(folder));
+    return parts.join(' · ');
+  }
+  var rndDialog = $('rndDialog');
+  function openRandomDialog() {
+    var label = filtersLabel(), pool = filteredPool();
+    $('rndAll').textContent = visibleSongs().length;
+    $('rndFiltDesc').textContent = label || 'nessun filtro attivo';
+    $('rndFilt').textContent = pool.length;
+    var filtRadio = rndDialog.querySelector('input[value="filt"]');
+    filtRadio.disabled = !label || !pool.length;
+    rndDialog.querySelector('input[value="' + (label && pool.length ? 'filt' : 'all') + '"]').checked = true;
+    if (rndDialog.showModal) rndDialog.showModal(); else rndDialog.setAttribute('open', '');
+  }
+  rndDialog.querySelectorAll('[data-n]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      rndDialog.querySelectorAll('[data-n]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    });
+  });
+  $('rndGo').addEventListener('click', function () {
+    var nb = rndDialog.querySelector('[data-n][aria-pressed="true"]'), n = nb ? Number(nb.getAttribute('data-n')) : 20;
+    var useFilt = rndDialog.querySelector('input[value="filt"]').checked;
+    var pool = shuffle((useFilt ? filteredPool() : visibleSongs()).map(function (s) { return s.id; }));
+    if (!pool.length) { rndDialog.close(); return; }
+    var d = new Date();
+    var p = newPl('Casuale ' + d.getDate() + '/' + (d.getMonth() + 1) + (useFilt ? ' · ' + filtersLabel() : ''));
+    p.songs = pool.slice(0, n);
+    touchPl(p);
+    rndDialog.close();
+    location.hash = '#/playlist/' + p.id;
+  });
+
+  // ---------- Canzoni importate (incollate da Ultimate Guitar o altro) ----------
+  // Restano nel dispositivo (state.local) finché non si mette il .txt nella
+  // cartella Uke e si rilancia il build.
+  var SUFFIX_RE = '(?:maj|min|m|M|dim|aug|sus|add|\\+|°|ø)?(?:\\d{1,2})?(?:(?:maj|sus|add|aug|dim|b|#|\\+)\\d{0,2}|-\\d{1,2})*(?:\\([^)\\s]{1,8}\\))?';
+  var EN_RE = '[A-G](?:#|b)?', IT_RE = '(?:Do|Re|Mi|Fa|Sol|La|Si)(?:#|b)?';
+  var CHORD_EN_RE = new RegExp('^' + EN_RE + SUFFIX_RE + '(?:/' + EN_RE + ')?$');
+  var CHORD_IT_RE = new RegExp('^' + IT_RE + SUFFIX_RE + '(?:/' + IT_RE + ')?$');
+  var SHAPE_RE = new RegExp('(?:^|[\\s(,;])(' + EN_RE + SUFFIX_RE + '(?:/' + EN_RE + ')?)[ \\t]*[:=]?[ \\t]*\\(?([0-9xX]{4})\\)?(?=$|[\\s),;])', 'g');
+
+  // Stesse regole di build.py (find_chords)
+  function findChords(text) {
+    var found = [], shapes = {};
+    function add(c) { if (found.indexOf(c) === -1) found.push(c); }
+    text.split('\n').forEach(function (line) {
+      var m;
+      SHAPE_RE.lastIndex = 0;
+      while ((m = SHAPE_RE.exec(line))) if (!shapes[m[1]]) shapes[m[1]] = m[2].toLowerCase();
+      line.replace(/\[([^\]\s]{1,16})\]/g, function (x, c) { if (CHORD_EN_RE.test(c)) add(c); return x; });
+      if (TAB_RE.test(line)) return;
+      var toks = line.replace(/\[[^\]\s]{1,16}\]/g, ' ').split(/[\s|]+/).map(function (t) {
+        return CHORD_EN_RE.test(t) ? t : t.replace(/^[(\[]+|[)\],;!?.]+$/g, '');
+      }).filter(function (t) { return t && !NOISE_RE.test(t); });
+      if (!toks.length) return;
+      var en = toks.filter(function (t) { return CHORD_EN_RE.test(t); });
+      var it = toks.filter(function (t) { return CHORD_IT_RE.test(t); });
+      var chordLine = en.length + it.length >= 0.6 * toks.length;
+      (chordLine ? toks.filter(function (t) { return en.indexOf(t) !== -1 || it.indexOf(t) !== -1; }) : en).forEach(function (c) {
+        if (chordLine || (c !== 'A' && c !== 'E' && c.length > 1)) add(c);
+      });
+    });
+    return { chords: found, shapes: shapes };
+  }
+
+  // Ripulisce il testo copiato da UG: [ch]Am[/ch], [tab], spazi non separabili, CRLF
+  function cleanPasted(t) {
+    var lines = String(t).replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ')
+      .replace(/\[\/?(?:ch|tab)\]/gi, '').split('\n').map(function (l) { return l.replace(/[ \t]+$/, ''); });
+    while (lines.length && !lines[0].trim()) lines.shift();
+    while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+    return lines.join('\n') + '\n';
+  }
+  // "Bread Chords by Anya Nami" (prima riga copiata da UG) -> titolo e artista
+  function guessFromHeader(t) {
+    var first = (String(t).split('\n').filter(function (l) { return l.trim(); })[0] || '').trim();
+    var m = /^(.+?)\s+(?:ukulele\s+)?(?:chords|tabs?|bass tabs?|ukulele)\s+by\s+(.+)$/i.exec(first);
+    return m ? { title: m[1].trim(), artist: m[2].trim() } : null;
+  }
+
+  function localIndex(id) {
+    for (var i = 0; i < state.local.length; i++) if (state.local[i].id === id) return i;
+    return -1;
+  }
+  function songKey(artist, title) { return foldSearch(artist) + '|' + foldSearch(title); }
+  function builtDuplicate(artist, title, exceptId) {
+    var k = songKey(artist, title);
+    return songs.filter(function (s) { return !s.local && s.id !== exceptId && songKey(s.artist, s.title) === k; })[0];
+  }
+  // Aggiunge/aggiorna una canzone importata nell'elenco; se la stessa canzone
+  // è ormai nella raccolta (dopo il build) la copia locale non si mostra.
+  function addLocalSong(l) {
+    var old = byId[l.id];
+    if (old) songs.splice(songs.indexOf(old), 1);
+    delete byId[l.id];
+    if (builtDuplicate(l.artist, l.title)) return;
+    var c = findChords(l.text);
+    var s = { id: l.id, artist: l.artist, title: l.title, folder: '', local: true, raw: l.text,
+      chords: c.chords, text: foldSearch(l.text) };
+    if (Object.keys(c.shapes).length) s.shapes = c.shapes;
+    s._key = foldSearch(s.artist + ' ' + s.title + ' importata');
+    s._text = ' ' + s.text + ' ';
+    songs.push(s);
+    byId[s.id] = s;
+  }
+  function removeLocalSong(id) {
+    var i = localIndex(id);
+    if (i !== -1) state.local.splice(i, 1);
+    save();
+    if (byId[id]) { songs.splice(songs.indexOf(byId[id]), 1); delete byId[id]; }
+  }
+  function txtName(artist, title) {
+    return ((artist ? artist + ' - ' : '') + title).replace(/[<>:"\/\\|?*\u0000-\u001f]/g, '').trim() + '.txt';
+  }
+  function downloadTxt(artist, title, text) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text.replace(/\n/g, '\r\n')], { type: 'text/plain;charset=utf-8' }));
+    a.download = txtName(artist, title);
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+
+  // Barra sopra il testo per le canzoni importate
+  function renderLocalBar(s) {
+    var bar = $('localBar');
+    bar.hidden = !s.local;
+    if (!s.local) return;
+    bar.innerHTML = '<span>Importata: è salvata solo su questo dispositivo. Per aggiungerla alla raccolta scarica il .txt, ' +
+      'mettilo nella cartella Uke e rilancia il build.</span>' +
+      '<span class="buttons"><button type="button" data-local-dl>Scarica .txt</button>' +
+      '<a class="btnlink" href="#/importa/' + s.id + '">Modifica</a>' +
+      '<button type="button" data-local-del>Elimina</button></span>';
+  }
+  $('localBar').addEventListener('click', function (e) {
+    if (!current || !current.local) return;
+    if (e.target.closest('[data-local-dl]')) downloadTxt(current.artist, current.title, current.raw);
+    if (e.target.closest('[data-local-del]') && window.confirm('Eliminare "' + current.title + '" da questo dispositivo?')) {
+      removeLocalSong(current.id);
+      location.hash = '#/';
+    }
+  });
+
+  // Pagina "Importa canzone"
+  var imp = { artist: '', title: '', text: '' }, impFor = null;
+  function startImport(id) {
+    impFor = id;
+    var i = localIndex(id), l = i === -1 ? null : state.local[i];
+    imp = l ? { artist: l.artist, title: l.title, text: l.text } : { artist: '', title: '', text: '' };
+  }
+  function renderImport() {
+    var editing = impFor && localIndex(impFor) !== -1;
+    els.list.innerHTML = '<div class="plhead"><a class="icon" href="#/" aria-label="Torna all\'elenco">&#8592;</a>' +
+      '<h2>' + (editing ? 'Modifica canzone importata' : 'Importa canzone') + '</h2></div>' +
+      '<div class="importform">' +
+      '<p class="muted">Apri la canzone su Ultimate Guitar (o su un altro sito), seleziona e copia il testo con gli accordi e ' +
+      'incollalo qui. Artista e titolo si compilano da soli se la prima riga è tipo "Titolo Chords by Artista".</p>' +
+      '<label>Artista<input id="impArtist" autocomplete="off" value="' + escapeHtml(imp.artist) + '"></label>' +
+      '<label>Titolo<input id="impTitle" autocomplete="off" value="' + escapeHtml(imp.title) + '"></label>' +
+      '<label>Testo e accordi<textarea id="impText" wrap="off" spellcheck="false" autocapitalize="off" ' +
+      'placeholder="Incolla qui…">' + escapeHtml(imp.text) + '</textarea></label>' +
+      '<p id="impInfo" class="muted" aria-live="polite"></p>' +
+      '<div class="buttons"><button type="button" class="primary" id="impSave">Salva</button>' +
+      '<button type="button" id="impDl">Scarica .txt</button></div></div>';
+    els.count.textContent = '';
+    updateImportInfo();
+  }
+  function updateImportInfo() {
+    var info = $('impInfo');
+    if (!info) return;
+    var c = imp.text.trim() ? findChords(imp.text).chords : [];
+    info.textContent = imp.text.trim() ? (c.length ? 'Accordi riconosciuti: ' + c.join(' ') : 'Nessun accordo riconosciuto.') : '';
+  }
+  els.list.addEventListener('input', function (e) {
+    if (page !== 'import') return;
+    if (e.target.id === 'impArtist') imp.artist = e.target.value;
+    if (e.target.id === 'impTitle') imp.title = e.target.value;
+    if (e.target.id === 'impText') {
+      imp.text = e.target.value;
+      var g = guessFromHeader(imp.text);
+      if (g && !imp.title.trim() && !imp.artist.trim()) {
+        imp.title = g.title; imp.artist = g.artist;
+        $('impTitle').value = g.title; $('impArtist').value = g.artist;
+      }
+      updateImportInfo();
+    }
+  });
+  els.list.addEventListener('paste', function (e) {
+    if (page !== 'import' || e.target.id !== 'impText') return;
+    setTimeout(function () {
+      var ta = $('impText');
+      if (!ta) return;
+      var cleaned = cleanPasted(ta.value);
+      if (cleaned !== ta.value) { ta.value = cleaned; }
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }, 0);
+  });
+  els.list.addEventListener('click', function (e) {
+    if (page !== 'import') return;
+    var saveBtn = e.target.closest('#impSave'), dl = e.target.closest('#impDl');
+    if (!saveBtn && !dl) return;
+    var artist = imp.artist.trim(), title = imp.title.trim(), text = cleanPasted(imp.text);
+    if (!title || !imp.text.trim()) { $('impInfo').textContent = 'Servono almeno il titolo e il testo.'; return; }
+    if (dl) { downloadTxt(artist, title, text); return; }
+    var id = impFor && localIndex(impFor) !== -1 ? impFor : 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    var dup = builtDuplicate(artist, title);
+    if (dup) {
+      if (!window.confirm('"' + title + '" di ' + (artist || 'artista sconosciuto') + ' è già nella raccolta. Salvarla comunque come copia?')) return;
+      title += ' (importata)';
+    }
+    var l = { id: id, artist: artist, title: title, text: text, updated: Date.now() }, i = localIndex(id);
+    if (i === -1) state.local.push(l); else state.local[i] = l;
+    save();
+    addLocalSong(l);
+    fillFolders();
+    impFor = null;
+    toast('Canzone salvata su questo dispositivo');
+    location.replace('#/song/' + id);
+  });
+  $('menuImportSong').addEventListener('click', function () { els.menu.close(); location.hash = '#/importa'; });
+
   // ---------- Avvio ----------
   function applySettings() {
     els.inText.checked = !!setting('inText', false);
@@ -1337,6 +1618,7 @@
       s._text = ' ' + (s.text || '') + ' ';
       byId[s.id] = s;
     });
+    state.local.forEach(addLocalSong);
     fillFolders();
     applySettings();
     return fetch('canzonieri.json', { cache: 'no-cache' }).then(function (r) {

@@ -512,3 +512,57 @@ svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
 }
 .ytlinks { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; margin: 12px auto 0; font-size: 14px; }
 .ytlinks a { color: var(--accent); }
+
+/* ---------- Playlist casuale ---------- */
+.pltools { display: flex; flex-wrap: wrap; gap: 8px; }
+.rndn { margin: 4px 0 8px; }
+.rndn button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.rndsrc { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; font-size: 15px; }
+.rndsrc input { margin-top: 3px; }
+.rndsrc input:disabled + * { opacity: .5; }
+
+/* ---------- Canzoni importate ---------- */
+.importform { padding: 4px 16px 32px; display: flex; flex-direction: column; gap: 10px; }
+.importform label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted); }
+.importform input, .importform textarea {
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.importform textarea {
+  min-height: 45vh;
+  font-family: var(--mono);
+  font-size: 13px;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 8;
+  -moz-tab-size: 8;
+}
+.localbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--line);
+}
+.localbar .buttons { margin: 0; gap: 6px; }
+.localbar button, .btnlink {
+  font-size: 13px;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.ug small { display: inline-block; margin-top: 8px; color: var(--muted); }

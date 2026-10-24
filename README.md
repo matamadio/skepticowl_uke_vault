@@ -237,6 +237,20 @@ controllare) e le canzoni senza accordi riconosciuti.
   **Condividi** nella playlist: crea un link con nome e canzoni; chi lo apre
   vede la playlist e la salva con *Salva tra le mie playlist*. (Il semplice
   indirizzo `#/playlist/…` funziona solo sul dispositivo dove è stata creata.)
+- **Playlist casuale**: nella scheda *Playlist*, *🎲 Playlist casuale* chiede
+  quante canzoni (10/20/30/50) e se pescarle da tutte o solo da quelle che
+  rispettano i filtri dell'elenco (tag, preferiti, cartella). Il risultato è una
+  playlist normale (modificabile, condivisibile). Dentro ogni playlist
+  *Mescola* cambia l'ordine a caso.
+- **Importa canzone** (menu ⋮, o dal link "Importala qui" quando una ricerca
+  non trova nulla): incolla il testo copiato da Ultimate Guitar o da un altro
+  sito; la formattazione di UG (`[ch]`, `[tab]`) viene ripulita e artista e
+  titolo si compilano dalla prima riga ("Titolo Chords by Artista"). La canzone
+  resta **solo sul dispositivo** (con accordi, diagrammi, playlist; viaggia con
+  Esporta/Importa JSON). Per aggiungerla alla raccolta per tutti: *Scarica
+  .txt*, metti il file nella cartella `Uke`, rilancia il build; da quel momento
+  la copia locale sparisce da sola. UG non permette ai siti di leggere le sue
+  pagine, quindi l'import passa dal copia e incolla.
 - **Scorrimento rapido su telefono**: mentre scorri compare una maniglia sul
   bordo destro; trascinala per saltare velocemente in qualsiasi punto.
 - **Visualizzatore**: come Notepad, carattere monospazio, tab a 8 colonne,
