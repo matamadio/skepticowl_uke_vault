@@ -1,0 +1,59 @@
+[Intro]
+
+(quietly)
+
+e|-------------------------|    |-3-----3-----3-----3-----|
+B|-------------------------|    |-1-----1-----1-----1-----|
+G|-0-----0-----0-----0-----|    |----2-----2-----2-----2--|
+D|-------------------------| or |-------------------------|
+A|-3--0--3--0--3--0--3--0--|    |-------------------------|
+E|-------------------------|    |-------------------------|
+   1  &  2  &  3  &  4  &         1  &  2  &  3  &  4  &
+
+
+[Verse]
+
+(quietly)
+Am7                                          Dm7
+Once, there was a way          to get back homeward
+G7                                           C
+Once, there was a way          to get back home
+E               Am           Dm9
+Sleep pretty darling, do not cry
+G7                      C
+ And I will sing a lullaby
+
+
+[Chorus]
+
+(loudly)
+C       Fadd9              C
+Golden slumbers fill your eyes
+C       Fadd9              C
+Smiles awake you when you rise
+E               Am           Dm9
+Sleep pretty darling, do not cry
+G7                       C
+  And I will sing a lullaby
+
+
+[Verse]
+
+(louder than first verse but not as loud as chorus)
+Am7                                          Dm7
+Once, there was a way          to get back homeward
+
+(Strings part)
+e|-------------------------|-5------------------------|------|
+B|---------5-6-5-----5--6--|----6--5--------5-6-------|------|
+G|------7---------7--------|-------------7------7--5--|-4----|
+D|---7---------------------|----------7---------------|------|
+A|-------------------------|--------------------------|------|
+E|-------------------------|--------------------------|------|
+
+G7                                          C
+Once, there was a way          to get back home
+E               Am           Dm9
+Sleep pretty darling, do not cry
+G7                       C
+  And I will sing a lullaby
