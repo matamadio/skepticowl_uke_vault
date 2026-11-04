@@ -259,6 +259,14 @@ controllare) e le canzoni senza accordi riconosciuti.
     lunga entra nello schermo (minimo 3 pt, oltre si scorre di lato).
   - *Originale* (predefinita su PC): dimensione piena, scorrimento orizzontale.
   - *A− / A+*: dimensione del carattere (in *Adatta* è il massimo), ricordata.
+  - **Trasponi** (♭ / ♯ nella barra, tasti `[` `]` su PC): sposta tutti gli
+    accordi della canzone di un semitono alla volta, sia nel testo sia nei
+    diagrammi, mantenendo l'allineamento sopra le parole; il numero (+2, −1…)
+    riporta alla tonalità originale. La trasposizione è ricordata per ogni
+    canzone.
+  - **Ukulele / Chitarra**: il riquadro all'inizio della striscia dei diagrammi
+    (o il tasto `G`) passa dai diagrammi per ukulele (GCEA) a quelli per
+    chitarra (EADGBE). La scelta vale per tutte le canzoni.
   - Gli accordi dentro il testo sono in grassetto colorato (stesse regole del
     riconoscimento, l'allineamento resta identico).
   - **Accordi**: in cima alla canzone i diagrammi (ukulele GCEA) degli accordi

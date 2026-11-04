@@ -1,4 +1,5 @@
-/* Accordi per ukulele (GCEA): da nome a diteggiatura, e disegno SVG. */
+/* Accordi per ukulele (GCEA) e chitarra (EADGBE): da nome a diteggiatura,
+   disegno SVG e trasposizione dei nomi. */
 (function (root) {
   'use strict';
   var NOTES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11, Do: 0, Re: 2, Mi: 4, Fa: 5, Sol: 7, La: 9, Si: 11 };
@@ -19,7 +20,25 @@
     'A#': '3211', 'A#7': '1211', 'A#m': '3111', 'A#maj7': '3210', 'A#m7': '1111',
     'B': '4322', 'B7': '2322', 'Bm': '4222', 'Bmaj7': '3322', 'Bm7': '2222', 'Bsus4': '4422'
   };
-  var FLAT_TO_SHARP = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#' };
+  // Chitarra (EADGBE, dalla corda grave); "x" = corda non suonata
+  var GUITAR = {
+    'C': 'x32010', 'C7': 'x32310', 'Cm': 'x35543', 'Cmaj7': 'x32000', 'Cm7': 'x35343', 'Csus4': 'x33011', 'Csus2': 'x30033', 'Cadd9': 'x32030', 'C6': 'x32210',
+    'C#': 'x46664', 'C#7': 'x46464', 'C#m': 'x46654', 'C#m7': 'x46454',
+    'D': 'xx0232', 'D7': 'xx0212', 'Dm': 'xx0231', 'Dmaj7': 'xx0222', 'Dm7': 'xx0211', 'Dsus4': 'xx0233', 'Dsus2': 'xx0230', 'D6': 'xx0202',
+    'D#': 'x68886', 'D#m': 'x68876', 'D#7': 'x68686',
+    'E': '022100', 'E7': '020100', 'Em': '022000', 'Emaj7': '021100', 'Em7': '022030', 'Esus4': '022200', 'E5': '022xxx',
+    'F': '133211', 'F7': '131211', 'Fm': '133111', 'Fmaj7': 'xx3210', 'Fm7': '131111', 'Fsus4': '133311', 'Fsus2': 'xx3011',
+    'F#': '244322', 'F#7': '242322', 'F#m': '244222', 'F#m7': '242222',
+    'G': '320003', 'G7': '320001', 'Gm': '355333', 'Gmaj7': '320002', 'Gm7': '353333', 'Gsus4': '330013', 'Gsus2': '300033', 'G6': '320000',
+    'G#': '466544', 'G#7': '464544', 'G#m': '466444', 'G#m7': '464444',
+    'A': 'x02220', 'A7': 'x02020', 'Am': 'x02210', 'Amaj7': 'x02120', 'Am7': 'x02010', 'Asus4': 'x02230', 'Asus2': 'x02200', 'A6': 'x02222', 'A5': 'x022xx',
+    'A#': 'x13331', 'A#7': 'x13131', 'A#m': 'x13321', 'A#maj7': 'x13231', 'A#m7': 'x13121',
+    'B': 'x24442', 'B7': 'x21202', 'Bm': 'x24432', 'Bmaj7': 'x24342', 'Bm7': 'x24232', 'Bsus4': 'x24452'
+  };
+  var INSTR = {
+    uke: { strings: [7, 0, 4, 9], common: COMMON },
+    guitar: { strings: [4, 9, 2, 7, 11, 4], common: GUITAR }
+  };
   var PC_NAME = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
   function parse(name) {
@@ -73,7 +92,7 @@
       if (tones.indexOf(b) === -1) { tones.push(b); if (required.length < 4) required.push(b); }
     }
     return { root: rootPc, tones: tones.map(function (t) { return (t + rootPc) % 12; }),
-      required: required.map(function (t) { return (t + rootPc) % 12; }), slash: bass !== null };
+      required: required.map(function (t) { return (t + rootPc) % 12; }), slash: bass !== null, bass: bass };
   }
   function degree(d, acc) {
     var map = { 2: 2, 4: 5, 6: 9, 9: 2, 11: 5, 13: 9, 3: 4, 5: 7 };
@@ -122,6 +141,63 @@
     return res;
   }
 
+  // Chitarra: per ogni posizione del manico ogni corda può essere muta, a vuoto
+  // o premuta entro 4 tasti; le corde mute solo dal lato dei bassi.
+  function searchGuitar(ch, limit) {
+    var S = INSTR.guitar.strings, out = [], seenShape = {};
+    for (var p = 1; p <= 10; p++) {
+      // per ogni corda solo i tasti che danno una nota dell'accordo (più "muta")
+      var opts = S.map(function (open, i) {
+        return [-1, 0, p, p + 1, p + 2, p + 3].filter(function (f) {
+          return f < 0 ? i < 2 : ch.tones.indexOf((open + f) % 12) !== -1;
+        });
+      });
+      (function walk(i, f) {
+        if (i === 6) {
+          var c0 = guitarCost(f, ch, S);
+          var key = f.join(',');
+          if (c0 < Infinity && !seenShape[key]) { seenShape[key] = 1; out.push({ frets: f.slice(), cost: c0 }); }
+          return;
+        }
+        for (var k = 0; k < opts[i].length; k++) { f[i] = opts[i][k]; walk(i + 1, f); }
+      })(0, []);
+    }
+    out.sort(function (x, y) { return x.cost - y.cost; });
+    var res = [], seen = {};
+    for (var n = 0; n < out.length && res.length < (limit || 3); n++) {
+      var pos = Math.min.apply(null, out[n].frets.filter(function (x) { return x > 0; }).concat([99]));
+      if (seen[pos] && res.length) continue;
+      seen[pos] = 1; res.push(out[n].frets);
+    }
+    return res;
+  }
+  function guitarCost(f, ch, S) {
+    var muted = 0;
+    while (muted < 6 && f[muted] < 0) muted++;
+    if (muted > 2) return Infinity;
+    for (var i = muted; i < 6; i++) if (f[i] < 0) return Infinity; // corde mute in mezzo: no
+    var have = {}, bass = null;
+    for (i = muted; i < 6; i++) {
+      var pc = (S[i] + f[i]) % 12;
+      if (ch.tones.indexOf(pc) === -1) return Infinity;
+      have[pc] = 1;
+      if (bass === null) bass = pc;
+    }
+    for (var j = 0; j < ch.required.length; j++) if (!have[ch.required[j]]) return Infinity;
+    if (!have[ch.root]) return Infinity;
+    var fretted = f.filter(function (x) { return x > 0; });
+    var min = fretted.length ? Math.min.apply(null, fretted) : 0, max = fretted.length ? Math.max.apply(null, fretted) : 0;
+    if (max - min > 3) return Infinity;
+    // barré sul tasto più basso se ci sono almeno 2 corde lì
+    var atMin = fretted.filter(function (x) { return x === min; }).length;
+    var fingers = fretted.length - (atMin >= 2 ? atMin - 1 : 0);
+    if (fingers > 4) return Infinity;
+    var open = 6 - muted - fretted.length;
+    var wantBass = ch.bass !== null ? ch.bass : ch.root;
+    return min * 1.2 + (max - min) + fingers * 0.6 + muted * 0.4 + (bass === wantBass ? 0 : 4) +
+      (open && max >= 5 ? (min > 4 ? 2 : 1.2) : 0) + (ch.tones.length >= 3 && Object.keys(have).length < 3 ? 2 : 0);
+  }
+
   function fromString(s) {
     return s.split('').map(function (c) { return c === 'x' || c === 'X' ? -1 : Number(c); });
   }
@@ -129,8 +205,10 @@
   // Fino a 4 diteggiature: quella scritta nel file (custom), quella "da
   // manuale", poi quelle calcolate in altre posizioni del manico.
   var cache = {};
-  function shapes(name, custom) {
-    var key = name + '|' + (custom || '');
+  function shapes(name, custom, instrument) {
+    var inst = INSTR[instrument] ? instrument : 'uke';
+    if (inst !== 'uke') custom = null; // le diteggiature scritte nei file sono per ukulele
+    var key = inst + '|' + name + '|' + (custom || '');
     if (cache[key]) return cache[key];
     var ch = parse(name), res = [];
     function add(f) {
@@ -140,24 +218,25 @@
     if (custom) add(fromString(custom));
     if (ch) {
       var canon = canonical(name);
-      if (canon && COMMON[canon]) add(fromString(COMMON[canon]));
-      search(ch, 4).forEach(add);
+      if (canon && INSTR[inst].common[canon]) add(fromString(INSTR[inst].common[canon]));
+      (inst === 'guitar' ? searchGuitar(ch, 4) : search(ch, 4)).forEach(add);
     }
     return (cache[key] = res.slice(0, 4));
   }
 
-  // Diagramma SVG: corde verticali G C E A, 4 tasti, pallini sulle note
+  // Diagramma SVG: corde verticali (G C E A, o E A D G B E), 4 tasti, pallini
   function svg(name, frets, label) {
-    var W = 64, H = 88, x0 = 13, y0 = 30, dx = 13, dy = 13, nf = 4;
+    var ns = frets.length, dx = ns > 4 ? 11 : 13;
+    var x0 = 13, W = x0 * 2 + (ns - 1) * dx, H = 88, y0 = 30, dy = 13, nf = 4;
     var played = frets.filter(function (f) { return f > 0; });
     var max = played.length ? Math.max.apply(null, played) : 0;
     var base = max <= nf ? 1 : Math.min.apply(null, played);
     var o = ['<svg class="chord" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="' +
       esc(name) + ' ' + frets.map(function (f) { return f < 0 ? 'x' : f; }).join('') + '">'];
     o.push('<text x="' + (W / 2) + '" y="12" class="cn">' + esc(name) + '</text>');
-    for (var s = 0; s < 4; s++) o.push('<line x1="' + (x0 + s * dx) + '" y1="' + y0 + '" x2="' + (x0 + s * dx) + '" y2="' + (y0 + nf * dy) + '"/>');
+    for (var s = 0; s < ns; s++) o.push('<line x1="' + (x0 + s * dx) + '" y1="' + y0 + '" x2="' + (x0 + s * dx) + '" y2="' + (y0 + nf * dy) + '"/>');
     for (var r = 0; r <= nf; r++) {
-      o.push('<line x1="' + x0 + '" y1="' + (y0 + r * dy) + '" x2="' + (x0 + 3 * dx) + '" y2="' + (y0 + r * dy) + '"' +
+      o.push('<line x1="' + x0 + '" y1="' + (y0 + r * dy) + '" x2="' + (x0 + (ns - 1) * dx) + '" y2="' + (y0 + r * dy) + '"' +
         (r === 0 && base === 1 ? ' class="nut"' : '') + '/>');
     }
     if (base > 1) o.push('<text x="' + (x0 - 4) + '" y="' + (y0 + dy * 0.75) + '" class="fr">' + base + '</text>');
@@ -165,7 +244,7 @@
       var x = x0 + i * dx;
       if (f < 0) o.push('<text x="' + x + '" y="' + (y0 - 4) + '" class="mx">×</text>');
       else if (f === 0) o.push('<circle cx="' + x + '" cy="' + (y0 - 7) + '" r="2.8" class="open"/>');
-      else o.push('<circle cx="' + x + '" cy="' + (y0 + (f - base + 0.5) * dy) + '" r="4.6" class="dot"/>');
+      else o.push('<circle cx="' + x + '" cy="' + (y0 + (f - base + 0.5) * dy) + '" r="' + (ns > 4 ? 4.2 : 4.6) + '" class="dot"/>');
     });
     if (label) o.push('<text x="' + (W / 2) + '" y="' + (H - 1) + '" class="alt">' + label + '</text>');
     o.push('</svg>');
@@ -181,5 +260,21 @@
     return PC_NAME[pc] + q;
   }
 
-  root.UkeChords = { parse: parse, shapes: shapes, svg: svg };
+  // Trasposizione: sposta fondamentale e basso di n semitoni, lascia il resto.
+  // Bemolle per Bb, Eb, Ab, Db (come si scrivono di solito), diesis per gli altri.
+  var OUT_EN = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+  var OUT_IT = ['Do', 'Do#', 'Re', 'Mib', 'Mi', 'Fa', 'Fa#', 'Sol', 'Lab', 'La', 'Sib', 'Si'];
+  function transpose(name, n) {
+    n = ((n % 12) + 12) % 12;
+    if (!n) return name;
+    var m = /^(Do|Re|Mi|Fa|Sol|La|Si|[A-G])(#|b)?(.*?)(?:\/(Do|Re|Mi|Fa|Sol|La|Si|[A-G])(#|b)?)?$/.exec(name);
+    if (!m) return name;
+    var it = m[1].length > 1, OUT = it ? OUT_IT : OUT_EN;
+    function shift(root, acc) {
+      return OUT[(NOTES[root] + (acc === '#' ? 1 : acc === 'b' ? 11 : 0) + n) % 12];
+    }
+    return shift(m[1], m[2]) + m[3] + (m[4] ? '/' + shift(m[4], m[5]) : '');
+  }
+
+  root.UkeChords = { parse: parse, shapes: shapes, svg: svg, transpose: transpose };
 })(typeof window !== 'undefined' ? window : module.exports);

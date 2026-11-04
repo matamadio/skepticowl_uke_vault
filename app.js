@@ -824,6 +824,8 @@
     updateViewerStar();
     showMessage('Caricamento…');
     $('chordStrip').hidden = true;
+    currentText = '';
+    updateTransposeUi();
     renderVideo(s);
     requestWakeLock();
 
@@ -835,9 +837,8 @@
     })).then(function (t) {
       if (token !== loadToken) return;
       maxCols = columns(t);
-      els.text.className = '';
-      els.text.innerHTML = markChords(t, s.chords || []);
-      renderChords();
+      currentText = t;
+      showSongText();
       applyLayout();
     }).catch(function () {
       if (token !== loadToken) return;
@@ -880,15 +881,19 @@
     $('chordsBtn').setAttribute('aria-pressed', String(on));
     $('chordsBtn').hidden = !list.length || !window.UkeChords;
     if (!list.length || !on || !window.UkeChords) { strip.hidden = true; return; }
-    var custom = current.shapes || {};
-    strip.innerHTML = list.map(function (name) {
-      var all = UkeChords.shapes(name, custom[name]);
-      if (!all.length) return '';
-      var i = (chordAlt[current.id + '|' + name] || 0) % all.length;
-      return '<button type="button" class="chordbtn" data-chord="' + escapeHtml(name) + '" title="' +
-        (all.length > 1 ? 'Tocca per un\'altra diteggiatura' : escapeHtml(name)) + '">' +
-        UkeChords.svg(name, all[i], all.length > 1 ? (i + 1) + '/' + all.length : '') + '</button>';
-    }).join('');
+    var custom = current.shapes || {}, shift = getShift(), inst = setting('instrument', 'uke');
+    strip.innerHTML = '<button type="button" class="chordinst" data-inst title="Cambia strumento (G)">' +
+      (inst === 'guitar' ? 'Chitarra' : 'Ukulele') + '<small>cambia</small></button>' +
+      list.map(function (orig) {
+        var name = shift ? UkeChords.transpose(orig, shift) : orig;
+        // le diteggiature scritte nel file valgono solo nella tonalità originale
+        var all = UkeChords.shapes(name, shift ? null : custom[orig], inst);
+        if (!all.length) return '';
+        var i = (chordAlt[current.id + '|' + inst + '|' + name] || 0) % all.length;
+        return '<button type="button" class="chordbtn" data-chord="' + escapeHtml(name) + '" title="' +
+          (all.length > 1 ? 'Tocca per un\'altra diteggiatura' : escapeHtml(name)) + '">' +
+          UkeChords.svg(name, all[i], all.length > 1 ? (i + 1) + '/' + all.length : '') + '</button>';
+      }).join('');
     strip.hidden = false;
   }
   // Accordi nel testo in grassetto. Stesse regole di build.py: [Am] sempre;
@@ -897,10 +902,11 @@
   var TAB_RE = /^\s*[A-Ga-g][#b]?\s*[|:]?-*[|:]?[-0-9hpbr\/\\~x|]{4,}/;
   var NOISE_RE = /^(?:x\d+|\d+x|[-|\/.:%*]+|\(?x?\d+\)?|n\.?c\.?|\d{4})$/i;
   var ITA_RE = /^(Do|Re|Mi|Fa|Sol|La|Si)/;
-  function markChords(text, chords) {
+  function markChords(text, chords, shift) {
     if (!chords.length) return escapeHtml(text);
     var set = {};
     chords.forEach(function (c) { set[c] = 1; });
+    function tr(c) { return shift && window.UkeChords ? UkeChords.transpose(c, shift) : c; }
     return text.split('\n').map(function (line) {
       if (TAB_RE.test(line)) return escapeHtml(line);
       var toks = line.replace(/\[[^\]\s]{1,16}\]/g, ' ').split(/[\s|]+/).filter(function (t) {
@@ -908,18 +914,79 @@
       });
       var hits = toks.filter(function (t) { return set[t] || set[t.replace(/^[(\[]+|[)\],;!?.]+$/g, '')]; }).length;
       var chordLine = toks.length && hits >= 0.6 * toks.length;
-      // pezzi: [Accordo] | spazi | parola
-      return line.replace(/\[([^\]\s]{1,16})\]|[^\s|\[]+|[\s|]+|\[/g, function (m, br) {
-        if (br !== undefined) return set[br] ? '<b class="ch">' + escapeHtml(m) + '</b>' : escapeHtml(m);
+      // pezzi: [Accordo] | spazi | parola. Trasponendo, un accordo può
+      // cambiare lunghezza (C -> C#): nelle righe di accordi lo spazio che
+      // segue si accorcia o si allunga, così le colonne restano allineate.
+      var debt = 0;
+      return (line.match(/\[([^\]\s]{1,16})\]|[^\s|\[]+|[\s|]+|\[/g) || []).map(function (m) {
+        if (/^[\s|]+$/.test(m)) {
+          if (debt && chordLine && /^ +$/.test(m)) {
+            if (debt > 0) { var cut = Math.min(debt, m.length - 1); m = m.slice(cut); debt -= cut; }
+            else { m += new Array(1 - debt).join(' '); debt = 0; }
+          } else if (/\t/.test(m)) debt = 0; // le tabulazioni riallineano da sole
+          return escapeHtml(m);
+        }
+        var br = /^\[([^\]\s]{1,16})\]$/.exec(m), out;
+        if (br) {
+          if (!set[br[1]]) return escapeHtml(m);
+          out = '[' + tr(br[1]) + ']';
+          debt += out.length - m.length;
+          return '<b class="ch">' + escapeHtml(out) + '</b>';
+        }
         var core = m.replace(/^[(\[]+|[)\],;!?.]+$/g, '');
         if (!set[m] && !set[core]) return escapeHtml(m);
         var ambiguous = m === 'A' || m === 'E' || ITA_RE.test(core);
         if (!chordLine && (ambiguous || core.length < 2)) return escapeHtml(m);
-        if (set[m]) return '<b class="ch">' + escapeHtml(m) + '</b>';
+        if (set[m]) {
+          out = tr(m);
+          debt += out.length - m.length;
+          return '<b class="ch">' + escapeHtml(out) + '</b>';
+        }
         var i = m.indexOf(core);
-        return escapeHtml(m.slice(0, i)) + '<b class="ch">' + escapeHtml(core) + '</b>' + escapeHtml(m.slice(i + core.length));
-      });
+        out = tr(core);
+        debt += out.length - core.length;
+        return escapeHtml(m.slice(0, i)) + '<b class="ch">' + escapeHtml(out) + '</b>' + escapeHtml(m.slice(i + core.length));
+      }).join('');
     }).join('\n');
+  }
+
+  // ---------- Trasposizione e strumento ----------
+  var currentText = '';
+  function getShift() { return current ? Number((setting('tr', {}) || {})[current.id]) || 0 : 0; }
+  function setShift(n) {
+    if (!current) return;
+    n = ((n % 12) + 12) % 12;
+    if (n > 6) n -= 12; // da -5 a +6
+    var map = Object.assign({}, setting('tr', {}));
+    if (n) map[current.id] = n; else delete map[current.id];
+    setSetting('tr', map);
+    showSongText();
+  }
+  function updateTransposeUi() {
+    var n = getShift(), has = !!(current && current.chords && current.chords.length);
+    $('trGroup').hidden = !has;
+    $('trLabel').textContent = n ? (n > 0 ? '+' + n : '\u2212' + (-n)) : 'Tono';
+    $('trLabel').classList.toggle('on', !!n);
+    $('trLabel').title = n ? 'Trasposta di ' + n + ' semitoni: tocca per tornare alla tonalità originale' : 'Tonalità originale';
+  }
+  // (ri)disegna testo e diagrammi della canzone aperta
+  function showSongText() {
+    if (!current) return;
+    els.text.className = '';
+    els.text.innerHTML = markChords(currentText, current.chords || [], getShift());
+    updateTransposeUi();
+    renderChords();
+  }
+  $('trDown').addEventListener('click', function () { setShift(getShift() - 1); });
+  $('trUp').addEventListener('click', function () { setShift(getShift() + 1); });
+  $('trLabel').addEventListener('click', function () { setShift(0); });
+  function toggleInstrument() {
+    var next = setting('instrument', 'uke') === 'guitar' ? 'uke' : 'guitar';
+    setSetting('instrument', next);
+    var x = $('chordStrip').scrollLeft;
+    renderChords();
+    $('chordStrip').scrollLeft = x;
+    toast('Diagrammi per ' + (next === 'guitar' ? 'chitarra' : 'ukulele'));
   }
 
   function toggleChords() {
@@ -928,9 +995,10 @@
   }
   $('chordsBtn').addEventListener('click', toggleChords);
   $('chordStrip').addEventListener('click', function (e) {
+    if (e.target.closest('[data-inst]')) { toggleInstrument(); return; }
     var b = e.target.closest('[data-chord]');
     if (!b || !current) return;
-    var k = current.id + '|' + b.getAttribute('data-chord');
+    var k = current.id + '|' + setting('instrument', 'uke') + '|' + b.getAttribute('data-chord');
     chordAlt[k] = (chordAlt[k] || 0) + 1;
     var x = $('chordStrip').scrollLeft;
     renderChords();
@@ -1059,6 +1127,9 @@
       else if (e.key === 's' || e.key === 'S') { if (scrolling) stopScroll(); else startScroll(); }
       else if (e.key === 'f' || e.key === 'F') setMode(mode() === 'fit' ? 'orig' : 'fit');
       else if (e.key === 'c' || e.key === 'C') toggleChords();
+      else if (e.key === 'g' || e.key === 'G') toggleInstrument();
+      else if (e.key === '[') setShift(getShift() - 1);
+      else if (e.key === ']') setShift(getShift() + 1);
       else if ((e.key === 'n' || e.key === 'N') && viewerPl) stepPl(1);
       else if ((e.key === 'p' || e.key === 'P') && viewerPl) stepPl(-1);
     } else if (e.key === '/' && !typing) {

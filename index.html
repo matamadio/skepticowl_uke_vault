@@ -18,7 +18,7 @@
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="style.css?v=7ee62089">
+<link rel="stylesheet" href="style.css?v=03a32b0e">
 </head>
 <body>
 
@@ -89,6 +89,11 @@
       </div>
       <div class="seg" role="group" aria-label="Accordi">
         <button id="chordsBtn" type="button" title="Mostra/nascondi i diagrammi degli accordi (C)">Accordi</button>
+      </div>
+      <div id="trGroup" class="seg" role="group" aria-label="Trasponi" hidden>
+        <button id="trDown" type="button" title="Abbassa di un semitono ([)" aria-label="Abbassa di un semitono">&#9837;</button>
+        <button id="trLabel" type="button" class="trlabel">Tono</button>
+        <button id="trUp" type="button" title="Alza di un semitono (])" aria-label="Alza di un semitono">&#9839;</button>
       </div>
       <div class="seg" role="group" aria-label="Scorrimento automatico">
         <button id="scrollBtn" type="button" title="Scorrimento automatico (S)">&#9654;</button>
@@ -162,7 +167,7 @@
   <button id="installYes" type="button" class="primary">Installa</button>
 </div>
 
-<script src="chords.js?v=54b74c6f"></script>
-<script src="app.js?v=bea89bb3"></script>
+<script src="chords.js?v=29f29e73"></script>
+<script src="app.js?v=bb091927"></script>
 </body>
 </html>
