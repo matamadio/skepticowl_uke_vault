@@ -21,6 +21,7 @@ build sulla cartella vera.
 | `index.html`, `app.js`, `style.css` | L'app: elenco + visualizzatore |
 | `sw.js`, `manifest.webmanifest`, `icons/` | App installabile e uso offline |
 | `songs/`, `songs.json`, `canzonieri/`, `canzonieri.json` | **Generati** dal build: non modificarli a mano |
+| `reflow.js`, `tools/test_reflow.js` | Modalità *A capo* e il suo test su tutte le canzoni (`node tools/test_reflow.js`, gira anche su GitHub a ogni modifica) |
 | `tools/esempi/` | Txt di prova (tab, accordi allineati, cp1252, UTF-16, righe lunghe) |
 
 ## Prima installazione
@@ -255,8 +256,14 @@ controllare) e le canzoni senza accordi riconosciuti.
   bordo destro; trascinala per saltare velocemente in qualsiasi punto.
 - **Visualizzatore**: come Notepad, carattere monospazio, tab a 8 colonne,
   mai a capo automatico; su PC il testo sta al centro dello schermo.
-  - *Adatta* (predefinita su telefono): riduce il carattere finché la riga più
-    lunga entra nello schermo (minimo 3 pt, oltre si scorre di lato).
+  - *A capo* (predefinita su telefono): il testo va a capo alla larghezza
+    dello schermo, ma **ogni accordo resta sopra la stessa lettera**: la riga
+    degli accordi e quella del testo vanno a capo insieme, nello stesso punto;
+    le tablature vanno a capo tutte le corde insieme (meglio su una battuta).
+    A−/A+ cambiano il carattere e il testo si ridispone. Le poche righe senza
+    un punto dove spezzare (link, `*****`, parole lunghissime) sporgono.
+  - *Adatta*: riduce il carattere finché la riga più lunga entra nello
+    schermo (minimo 3 pt, oltre si scorre di lato).
   - *Originale* (predefinita su PC): dimensione piena, scorrimento orizzontale.
   - *A− / A+*: dimensione del carattere (in *Adatta* è il massimo), ricordata.
   - **Trasponi** (♭ / ♯ nella barra, tasti `[` `]` su PC): sposta tutti gli

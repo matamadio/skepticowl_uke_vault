@@ -81,7 +81,7 @@
     favOnly: $('favOnly'), sort: $('sort'), folder: $('folder'), count: $('count'),
     viewer: $('viewer'), text: $('text'), scroller: $('scroller'),
     vTitle: $('vTitle'), vArtist: $('vArtist'), vStar: $('vStar'),
-    modeFit: $('modeFit'), modeOrig: $('modeOrig'), fontSize: $('fontSize'),
+    modeWrap: $('modeWrap'), modeFit: $('modeFit'), modeOrig: $('modeOrig'), fontSize: $('fontSize'),
     scrollBtn: $('scrollBtn'), speed: $('speed'), menu: $('menu')
   };
 
@@ -713,7 +713,8 @@
   function isMobile() {
     return window.matchMedia('(max-width: 759px), (pointer: coarse)').matches;
   }
-  function mode() { return setting('mode', isMobile() ? 'fit' : 'orig'); }
+  // wrap = "A capo" (reflow.js), fit = "Adatta" (carattere ridotto), orig = "Originale"
+  function mode() { return setting('mode', isMobile() ? 'wrap' : 'orig'); }
   function basePt() { return setting('fontPt', DEFAULT_PT); }
 
   function columns(text) {
@@ -742,11 +743,22 @@
     return charRatio;
   }
 
-  function applyLayout() {
+  var renderedW = null; // larghezza (in caratteri) con cui il testo è andato a capo; null = non a capo
+  function textWidthPx() {
+    var cs = getComputedStyle(els.text);
+    return els.scroller.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2;
+  }
+  function applyLayout(force) {
     if (!current) return;
     var pt = basePt();
     var px = pt * 4 / 3;
     var m = mode();
+    if (m === 'wrap' && window.Reflow) {
+      var W = Math.max(12, Math.floor(textWidthPx() / (measureRatio() * px)) - 1);
+      if (force || W !== renderedW) renderText(W);
+    } else if (force || renderedW !== null) {
+      renderText(null);
+    }
     if (m === 'fit' && maxCols > 0) {
       var cs = getComputedStyle(els.text);
       var avail = els.scroller.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2;
@@ -754,6 +766,7 @@
       px = Math.max(MIN_FIT_PX, Math.min(px, Math.floor(fit * 10) / 10));
     }
     els.text.style.fontSize = px + 'px';
+    els.modeWrap.setAttribute('aria-pressed', String(m === 'wrap'));
     els.modeFit.setAttribute('aria-pressed', String(m === 'fit'));
     els.modeOrig.setAttribute('aria-pressed', String(m === 'orig'));
     els.fontSize.textContent = m === 'fit' && px < pt * 4 / 3 - 0.05 ?
@@ -761,11 +774,12 @@
     els.fontSize.title = m === 'fit' ? 'Dimensione attuale / massima' : 'Dimensione del carattere';
   }
 
-  function setMode(m) { setSetting('mode', m); applyLayout(); }
+  function setMode(m) { setSetting('mode', m); els.scroller.scrollLeft = 0; applyLayout(); }
   function bumpFont(d) {
     setSetting('fontPt', Math.max(MIN_PT, Math.min(MAX_PT, basePt() + d)));
     applyLayout();
   }
+  els.modeWrap.addEventListener('click', function () { setMode('wrap'); });
   els.modeFit.addEventListener('click', function () { setMode('fit'); });
   els.modeOrig.addEventListener('click', function () { setMode('orig'); els.scroller.scrollLeft = 0; });
   $('fontDown').addEventListener('click', function () { bumpFont(-1); });
@@ -838,8 +852,8 @@
       if (token !== loadToken) return;
       maxCols = columns(t);
       currentText = t;
+      renderedW = null;
       showSongText();
-      applyLayout();
     }).catch(function () {
       if (token !== loadToken) return;
       showMessage(navigator.onLine ? 'Impossibile caricare la canzone.' :
@@ -902,13 +916,16 @@
   var TAB_RE = /^\s*[A-Ga-g][#b]?\s*[|:]?-*[|:]?[-0-9hpbr\/\\~x|]{4,}/;
   var NOISE_RE = /^(?:x\d+|\d+x|[-|\/.:%*]+|\(?x?\d+\)?|n\.?c\.?|\d{4})$/i;
   var ITA_RE = /^(Do|Re|Mi|Fa|Sol|La|Si)/;
-  function markChords(text, chords, shift) {
-    if (!chords.length) return escapeHtml(text);
+  // plain: restituisce testo semplice (trasposto) invece di HTML
+  function markChords(text, chords, shift, plain) {
+    var esc = plain ? function (s) { return s; } : escapeHtml;
+    function bold(s) { return plain ? s : '<b class="ch">' + escapeHtml(s) + '</b>'; }
+    if (!chords.length) return esc(text);
     var set = {};
     chords.forEach(function (c) { set[c] = 1; });
     function tr(c) { return shift && window.UkeChords ? UkeChords.transpose(c, shift) : c; }
     return text.split('\n').map(function (line) {
-      if (TAB_RE.test(line)) return escapeHtml(line);
+      if (TAB_RE.test(line)) return esc(line);
       var toks = line.replace(/\[[^\]\s]{1,16}\]/g, ' ').split(/[\s|]+/).filter(function (t) {
         return t && !NOISE_RE.test(t);
       });
@@ -924,28 +941,28 @@
             if (debt > 0) { var cut = Math.min(debt, m.length - 1); m = m.slice(cut); debt -= cut; }
             else { m += new Array(1 - debt).join(' '); debt = 0; }
           } else if (/\t/.test(m)) debt = 0; // le tabulazioni riallineano da sole
-          return escapeHtml(m);
+          return esc(m);
         }
         var br = /^\[([^\]\s]{1,16})\]$/.exec(m), out;
         if (br) {
-          if (!set[br[1]]) return escapeHtml(m);
+          if (!set[br[1]]) return esc(m);
           out = '[' + tr(br[1]) + ']';
           debt += out.length - m.length;
-          return '<b class="ch">' + escapeHtml(out) + '</b>';
+          return bold(out);
         }
         var core = m.replace(/^[(\[]+|[)\],;!?.]+$/g, '');
-        if (!set[m] && !set[core]) return escapeHtml(m);
+        if (!set[m] && !set[core]) return esc(m);
         var ambiguous = m === 'A' || m === 'E' || ITA_RE.test(core);
-        if (!chordLine && (ambiguous || core.length < 2)) return escapeHtml(m);
+        if (!chordLine && (ambiguous || core.length < 2)) return esc(m);
         if (set[m]) {
           out = tr(m);
           debt += out.length - m.length;
-          return '<b class="ch">' + escapeHtml(out) + '</b>';
+          return bold(out);
         }
         var i = m.indexOf(core);
         out = tr(core);
         debt += out.length - core.length;
-        return escapeHtml(m.slice(0, i)) + '<b class="ch">' + escapeHtml(out) + '</b>' + escapeHtml(m.slice(i + core.length));
+        return esc(m.slice(0, i)) + bold(out) + esc(m.slice(i + core.length));
       }).join('');
     }).join('\n');
   }
@@ -972,10 +989,27 @@
   // (ri)disegna testo e diagrammi della canzone aperta
   function showSongText() {
     if (!current) return;
-    els.text.className = '';
-    els.text.innerHTML = markChords(currentText, current.chords || [], getShift());
     updateTransposeUi();
     renderChords();
+    applyLayout(true);
+  }
+  // Testo nel <pre>: trasposizione -> (A capo: tab in spazi e a capo alla
+  // larghezza W) -> accordi in grassetto. La posizione di lettura si mantiene.
+  function renderText(W) {
+    if (!current || !currentText) return;
+    var chords = current.chords || [], shift = getShift(), html;
+    var docH = document.documentElement.scrollHeight, ratio = docH ? window.scrollY / docH : 0;
+    if (W) {
+      var plain = markChords(Reflow.expandTabs(currentText), chords, shift, true);
+      var shown = shift ? chords.map(function (c) { return UkeChords.transpose(c, shift); }) : chords;
+      html = markChords(Reflow.reflow(plain, W), shown, 0);
+    } else {
+      html = markChords(currentText, chords, shift);
+    }
+    els.text.className = '';
+    els.text.innerHTML = html;
+    renderedW = W || null;
+    if (ratio && !els.viewer.hidden) window.scrollTo(0, ratio * document.documentElement.scrollHeight);
   }
   $('trDown').addEventListener('click', function () { setShift(getShift() - 1); });
   $('trUp').addEventListener('click', function () { setShift(getShift() + 1); });
@@ -1125,7 +1159,7 @@
       else if (e.key === '+' || e.key === '=') bumpFont(1);
       else if (e.key === '-') bumpFont(-1);
       else if (e.key === 's' || e.key === 'S') { if (scrolling) stopScroll(); else startScroll(); }
-      else if (e.key === 'f' || e.key === 'F') setMode(mode() === 'fit' ? 'orig' : 'fit');
+      else if (e.key === 'f' || e.key === 'F') setMode({ wrap: 'fit', fit: 'orig', orig: 'wrap' }[mode()] || 'wrap');
       else if (e.key === 'c' || e.key === 'C') toggleChords();
       else if (e.key === 'g' || e.key === 'G') toggleInstrument();
       else if (e.key === '[') setShift(getShift() - 1);

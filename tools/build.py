@@ -372,7 +372,7 @@ def stamp_assets(out):
     with open(path, encoding="utf-8") as f:
         html = f.read()
     new = html
-    for name in ("app.js", "chords.js", "style.css"):
+    for name in ("app.js", "chords.js", "reflow.js", "style.css"):
         p = os.path.join(out, name)
         if os.path.exists(p):
             v = file_hash(p)
