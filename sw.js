@@ -1,9 +1,15 @@
 /* Service worker: app sempre aggiornata quando c'è rete, tutto disponibile offline. */
 'use strict';
 
-var SHELL = 'vault-shell-v5';
-var SONGS = 'vault-songs-v1';
-var BOOKS = 'vault-canzonieri-v1';
+// matamadio.github.io è condiviso da tutti i siti GitHub Pages dell'utente, e le
+// cache sono per origine: nomi con il prefisso dell'app, e all'aggiornamento si
+// cancellano solo le cache di questa app (mai quelle degli altri siti).
+var PREFIX = 'skepticowl-vault-';
+var SHELL = PREFIX + 'shell-v6';
+var SONGS = PREFIX + 'songs-v1';
+var BOOKS = PREFIX + 'canzonieri-v1';
+var OLD = ['vault-shell-v1', 'vault-shell-v2', 'vault-shell-v3', 'vault-shell-v4', 'vault-shell-v5',
+  'vault-songs-v1', 'vault-canzonieri-v1']; // nomi usati dalle versioni precedenti
 var SHELL_FILES = [
   './', 'index.html', 'app.js', 'chords.js', 'reflow.js', 'style.css', 'songs.json', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'
@@ -17,7 +23,9 @@ self.addEventListener('install', function (e) {
 
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.filter(function (k) { return k !== SHELL && k !== SONGS && k !== BOOKS; })
+    return Promise.all(keys.filter(function (k) {
+      return (k.indexOf(PREFIX) === 0 || OLD.indexOf(k) !== -1) && k !== SHELL && k !== SONGS && k !== BOOKS;
+    })
       .map(function (k) { return caches.delete(k); }));
   }).then(function () { return self.clients.claim(); }));
 });
