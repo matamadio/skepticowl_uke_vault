@@ -1066,7 +1066,8 @@
 
   // ---------- Scorrimento automatico ----------
   var scrolling = false, lastT = 0, carry = 0, rafId = 0;
-  function speedPx() { return 6 * setting('speed', 5); } // pixel al secondo
+  // pixel al secondo: da 3 (circa una riga ogni 6 s) a 41 (circa due righe al secondo), a passi di 2
+  function speedPx() { return 1 + 2 * Math.max(1, Math.min(20, Number(setting('speed', 5)) || 5)); }
   function step(t) {
     if (!scrolling) return;
     if (lastT) {
