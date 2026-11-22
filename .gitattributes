@@ -3,3 +3,5 @@
 songs/** -text
 tools/esempi/** -text
 canzonieri/** -text
+# script di Windows: fine riga CRLF
+*.bat text eol=crlf
