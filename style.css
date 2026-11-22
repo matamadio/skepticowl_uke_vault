@@ -588,3 +588,21 @@ svg.chord .alt { font-size: 8.5px; fill: var(--muted); }
   font-weight: 650;
 }
 .chordinst small { font-weight: 400; color: var(--muted); font-size: 10px; }
+
+/* ---------- Sincronizzazione ---------- */
+.syncsteps { padding-left: 20px; margin: 6px 0; }
+.syncsteps li { margin: 4px 0; }
+.syncsteps a { color: var(--accent); }
+.synctoken { display: flex; gap: 8px; margin: 8px 0; }
+.synctoken input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+.syncstate { margin: 6px 0; font-size: 14px; }
+.syncerr { color: #c0392b; }
