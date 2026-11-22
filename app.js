@@ -9,15 +9,23 @@
   var MIN_FIT_PX = 4; // sotto questa dimensione "Adatta" si arrende e lascia scorrere
 
   // ---------- Stato per dispositivo (localStorage) ----------
+  // favs: {id: istante in cui è diventato preferito}; deleted: cancellazioni
+  // (id -> istante), così la sincronizzazione non fa "risorgere" ciò che si è tolto
   function emptyState() {
-    return { favs: {}, plays: {}, last: {}, settings: {}, playlists: [], local: [] };
+    return { favs: {}, plays: {}, last: {}, settings: {}, playlists: [], local: [],
+      deleted: { favs: {}, playlists: {}, local: {} } };
   }
   function loadState() {
+    var raw = null;
+    try { raw = localStorage.getItem(STORE_KEY); } catch (e) { return emptyState(); }
+    if (!raw) return emptyState();
     try {
-      var raw = localStorage.getItem(STORE_KEY);
-      if (raw) return normalizeState(JSON.parse(raw));
-    } catch (e) { /* storage non disponibile o corrotto */ }
-    return emptyState();
+      return normalizeState(JSON.parse(raw));
+    } catch (e) {
+      // dati illeggibili: se ne tiene una copia invece di sovrascriverli
+      try { localStorage.setItem(STORE_KEY + '.illeggibile-' + Date.now(), raw); } catch (e2) { /* pazienza */ }
+      return emptyState();
+    }
   }
   function normalizeState(s) {
     var out = emptyState();
@@ -33,6 +41,14 @@
           updated: Number(l.updated) || 0 };
       });
     }
+    if (s.deleted && typeof s.deleted === 'object') {
+      ['favs', 'playlists', 'local'].forEach(function (k) {
+        var d = s.deleted[k];
+        if (d && typeof d === 'object' && !Array.isArray(d)) {
+          Object.keys(d).forEach(function (id) { var t = Number(d[id]); if (t) out.deleted[k][id] = t; });
+        }
+      });
+    }
     if (Array.isArray(s.playlists)) {
       out.playlists = s.playlists.filter(function (p) {
         return p && typeof p.id === 'string' && Array.isArray(p.songs);
@@ -46,6 +62,46 @@
   var state = loadState();
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignora */ }
+    afterSave();
+  }
+
+  // Unisce inc (stato normalizzato: da un file importato o dal Gist) in dst.
+  // Preferiti e cancellazioni: vince l'istante più recente; playlist e canzoni
+  // importate: vince la versione modificata per ultima; contatori: il massimo.
+  function mergeState(dst, inc) {
+    ['favs', 'playlists', 'local'].forEach(function (k) {
+      Object.keys(inc.deleted[k]).forEach(function (id) {
+        dst.deleted[k][id] = Math.max(dst.deleted[k][id] || 0, inc.deleted[k][id]);
+      });
+    });
+    Object.keys(inc.favs).forEach(function (id) {
+      var t = Number(inc.favs[id]) || 1;
+      if (t > (Number(dst.favs[id]) || 0)) dst.favs[id] = t;
+    });
+    Object.keys(dst.favs).forEach(function (id) {
+      if ((dst.deleted.favs[id] || 0) >= (Number(dst.favs[id]) || 1)) delete dst.favs[id];
+    });
+    ['plays', 'last'].forEach(function (k) {
+      Object.keys(inc[k]).forEach(function (id) {
+        var v = Number(inc[k][id]) || 0;
+        if (v > (Number(dst[k][id]) || 0)) dst[k][id] = v;
+      });
+    });
+    ['playlists', 'local'].forEach(function (k) {
+      inc[k].forEach(function (x) {
+        var i = -1;
+        for (var j = 0; j < dst[k].length; j++) if (dst[k][j].id === x.id) { i = j; break; }
+        if (i === -1) dst[k].push(x);
+        else if (x.updated > dst[k][i].updated) dst[k][i] = x;
+      });
+      dst[k] = dst[k].filter(function (x) { return (dst.deleted[k][x.id] || 0) < (x.updated || 1); });
+    });
+    // le cancellazioni vecchie di oltre 6 mesi non servono più
+    var old = Date.now() - 180 * 86400000;
+    ['favs', 'playlists', 'local'].forEach(function (k) {
+      Object.keys(dst.deleted[k]).forEach(function (id) { if (dst.deleted[k][id] < old) delete dst.deleted[k][id]; });
+    });
+    return dst;
   }
   function setting(k, def) {
     return Object.prototype.hasOwnProperty.call(state.settings, k) ? state.settings[k] : def;
@@ -511,6 +567,7 @@
     } else if (t.hasAttribute('data-pl-delete')) {
       if (!window.confirm('Eliminare la playlist "' + p.name + '"?')) return;
       state.playlists.splice(state.playlists.indexOf(p), 1);
+      state.deleted.playlists[p.id] = Date.now();
       save();
       location.hash = '#/playlist';
       return;
@@ -658,7 +715,8 @@
   function renderSoon() { clearTimeout(renderTimer); renderTimer = setTimeout(render, 60); }
 
   function toggleFav(id) {
-    if (state.favs[id]) delete state.favs[id]; else state.favs[id] = 1;
+    if (state.favs[id]) { delete state.favs[id]; state.deleted.favs[id] = Date.now(); }
+    else state.favs[id] = Date.now();
     save();
   }
 
@@ -869,6 +927,7 @@
     loadToken++;
     document.title = "Skepticowl's song vault";
     var wasViewer = !els.viewer.hidden;
+    setTimeout(checkBackupReminder, 0);
     els.viewer.hidden = true;
     els.listView.hidden = false;
     document.body.classList.remove('reading');
@@ -1178,22 +1237,15 @@
   $('menuBtn').addEventListener('click', function () {
     menuMsg.textContent = '';
     $('info').textContent = songs.length + ' canzoni' +
-      (meta.generated ? ' · aggiornate il ' + new Date(meta.generated).toLocaleString('it-IT') : '');
+      (meta.generated ? ' · aggiornate il ' + new Date(meta.generated).toLocaleString('it-IT') : '') +
+      (storagePersistent ? ' · dati del browser protetti dalla pulizia automatica' : '');
     updateOfflineInfo();
+    renderSyncBox();
     if (els.menu.showModal) els.menu.showModal(); else els.menu.setAttribute('open', '');
   });
 
   $('exportBtn').addEventListener('click', function () {
-    var data = JSON.stringify({ app: 'skepticowl-vault', version: 1, exported: new Date().toISOString(),
-      favs: state.favs, plays: state.plays, last: state.last, settings: state.settings,
-      playlists: state.playlists, local: state.local }, null, 1);
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
-    a.download = 'skepticowl-vault-stato-' + new Date().toISOString().slice(0, 10) + '.json';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-    menuMsg.textContent = 'Stato esportato.';
+    exportBackup().then(function (ok) { if (ok) menuMsg.textContent = 'Copia salvata.'; });
   });
 
   $('importBtn').addEventListener('click', function () { $('importFile').click(); });
@@ -1204,34 +1256,11 @@
     f.text().then(function (txt) {
       var inc = normalizeState(JSON.parse(txt));
       var n = Object.keys(inc.favs).length;
-      // Unione: preferiti sommati, per contatori e date vince il valore più alto
-      Object.keys(inc.favs).forEach(function (k) { if (inc.favs[k]) state.favs[k] = 1; });
-      Object.keys(inc.plays).forEach(function (k) {
-        var v = Number(inc.plays[k]) || 0;
-        if (v > (state.plays[k] || 0)) state.plays[k] = v;
-      });
-      Object.keys(inc.last).forEach(function (k) {
-        var v = Number(inc.last[k]) || 0;
-        if (v > (state.last[k] || 0)) state.last[k] = v;
-      });
       Object.keys(inc.settings).forEach(function (k) { state.settings[k] = inc.settings[k]; });
-      // Canzoni importate: stessa id -> vince la versione modificata per ultima
-      inc.local.forEach(function (l) {
-        var i = localIndex(l.id);
-        if (i === -1) state.local.push(l);
-        else if (l.updated > state.local[i].updated) state.local[i] = l;
-        addLocalSong(l);
-      });
-      // Playlist: stessa id -> vince la versione modificata per ultima
-      inc.playlists.forEach(function (p) {
-        var mine = findPl(p.id);
-        if (!mine) state.playlists.push(p);
-        else if (p.updated > mine.updated) state.playlists[state.playlists.indexOf(mine)] = p;
-      });
+      mergeState(state, inc);
       save();
-      fillFolders();
+      refreshAfterMerge();
       applySettings();
-      render();
       menuMsg.textContent = 'Importato: ' + n + ' preferiti e ' + inc.playlists.length +
         ' playlist uniti a quelli già presenti.';
     }).catch(function () {
@@ -1527,6 +1556,7 @@
   function removeLocalSong(id) {
     var i = localIndex(id);
     if (i !== -1) state.local.splice(i, 1);
+    state.deleted.local[id] = Date.now();
     save();
     if (byId[id]) { songs.splice(songs.indexOf(byId[id]), 1); delete byId[id]; }
   }
@@ -1640,6 +1670,248 @@
   });
   $('menuImportSong').addEventListener('click', function () { els.menu.close(); location.hash = '#/importa'; });
 
+  // ---------- Copie di sicurezza ----------
+  // Su telefono la copia passa dal menu di condivisione (Drive, WhatsApp, email…),
+  // altrimenti si scarica il file. Restituisce una Promise<boolean> (salvata o no).
+  function exportBackup() {
+    var data = JSON.stringify({ app: 'skepticowl-vault', version: 2, exported: new Date().toISOString(),
+      favs: state.favs, plays: state.plays, last: state.last, settings: state.settings,
+      playlists: state.playlists, local: state.local, deleted: state.deleted }, null, 1);
+    var name = 'skepticowl-vault-stato-' + new Date().toISOString().slice(0, 10) + '.json';
+    function done() {
+      setSetting('backupAt', Date.now());
+      setSetting('dirtySince', 0);
+      $('backupBar').hidden = true;
+      return true;
+    }
+    var file = null;
+    try { file = new File([data], name, { type: 'application/json' }); } catch (e) { file = null; }
+    if (file && isMobile() && navigator.canShare && navigator.canShare({ files: [file] })) {
+      return navigator.share({ files: [file], title: "Skepticowl's song vault – copia" }).then(done, function () { return false; });
+    }
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    return Promise.resolve(done());
+  }
+
+  // Chiede al browser di non cancellare i dati del sito per fare spazio
+  function requestPersistence() {
+    if (!navigator.storage || !navigator.storage.persist) return;
+    navigator.storage.persisted().then(function (p) { return p || navigator.storage.persist(); })
+      .then(function (p) { storagePersistent = !!p; }).catch(function () {});
+  }
+  var storagePersistent = null;
+
+  function hasPersonalData() {
+    return Object.keys(state.favs).length > 0 || state.playlists.length > 0 || state.local.length > 0;
+  }
+  // Promemoria: dati cambiati da più di un giorno, mai salvati altrove
+  function checkBackupReminder() {
+    var bar = $('backupBar');
+    if (!bar) return;
+    var now = Date.now(), dirty = Number(setting('dirtySince', 0));
+    if (!dirty && hasPersonalData() && !setting('backupAt', 0)) { setSetting('dirtySince', now); dirty = now; }
+    bar.hidden = !(dirty && hasPersonalData() && !syncConnected() && now - dirty > 86400000 &&
+      now > Number(setting('backupSnooze', 0)) && els.viewer.hidden);
+  }
+  $('backupYes').addEventListener('click', function () { exportBackup(); });
+  $('backupNo').addEventListener('click', function () {
+    setSetting('backupSnooze', Date.now() + 3 * 86400000);
+    $('backupBar').hidden = true;
+  });
+
+  // ---------- Sincronizzazione con un Gist privato di GitHub ----------
+  // Il token (solo permesso "gist") resta su questo dispositivo, in una chiave
+  // separata che non finisce nelle copie esportate. Si sincronizzano preferiti,
+  // playlist, canzoni importate, contatori e cancellazioni; le impostazioni
+  // (tema, carattere…) restano per dispositivo.
+  var SYNC_KEY = STORE_KEY + '.sync';
+  var GIST_FILE = 'skepticowl-vault.json';
+  function syncCfg() {
+    try { return JSON.parse(localStorage.getItem(SYNC_KEY) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function setSyncCfg(c) { try { localStorage.setItem(SYNC_KEY, JSON.stringify(c)); } catch (e) { /* ignora */ } }
+  function syncConnected() { return !!syncCfg().token; }
+  function syncPayload() {
+    return { app: 'skepticowl-vault', version: 2, favs: state.favs, plays: state.plays, last: state.last,
+      playlists: state.playlists, local: state.local, deleted: state.deleted };
+  }
+  function syncSig() { return JSON.stringify(syncPayload()); }
+
+  function gh(path, opts) {
+    var c = syncCfg();
+    opts = opts || {};
+    return fetch((c.api || 'https://api.github.com') + path, {
+      method: opts.method || 'GET',
+      headers: { Authorization: 'Bearer ' + c.token, Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json' },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      cache: 'no-store'
+    }).then(function (r) {
+      if (!r.ok) { var e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+      return r.json();
+    });
+  }
+  // Trova il Gist dell'app (o lo crea) e ne restituisce l'id
+  function ensureGist() {
+    var c = syncCfg();
+    if (c.gistId) return Promise.resolve(c.gistId);
+    return gh('/gists?per_page=100').then(function (list) {
+      var g = (list || []).filter(function (x) { return x.files && x.files[GIST_FILE]; })[0];
+      if (g) return g.id;
+      return gh('/gists', { method: 'POST', body: { description: "Skepticowl's song vault – preferiti e playlist",
+        public: false, files: (function () { var f = {}; f[GIST_FILE] = { content: syncSig() }; return f; })() } })
+        .then(function (g2) { return g2.id; });
+    }).then(function (id) { var c2 = syncCfg(); c2.gistId = id; setSyncCfg(c2); return id; });
+  }
+  function readGist(id) {
+    return gh('/gists/' + id).then(function (g) {
+      var f = g.files && g.files[GIST_FILE];
+      if (!f) return null;
+      if (!f.truncated) return f.content;
+      return fetch(f.raw_url, { cache: 'no-store' }).then(function (r) { return r.text(); });
+    }).then(function (txt) {
+      if (!txt) return null;
+      try { return normalizeState(JSON.parse(txt)); } catch (e) { return null; }
+    });
+  }
+
+  var syncBusy = false, syncAgain = false, syncTimer = 0, syncingNow = false, lastSyncSig = null;
+  function syncNow() {
+    if (!syncConnected()) return Promise.resolve();
+    if (syncBusy) { syncAgain = true; return Promise.resolve(); }
+    syncBusy = true;
+    renderSyncBox('Sincronizzazione in corso…');
+    var gistId;
+    return ensureGist().then(function (id) {
+      gistId = id;
+      return readGist(id);
+    }).then(function (remote) {
+      var before = syncSig(), remoteSig = remote ? JSON.stringify(normalizeForSig(remote)) : null;
+      if (remote) {
+        syncingNow = true;
+        mergeState(state, remote);
+        save();
+        syncingNow = false;
+        if (syncSig() !== before) refreshAfterMerge();
+      }
+      var mine = syncSig();
+      if (remoteSig === mine) return null;
+      var files = {};
+      files[GIST_FILE] = { content: mine };
+      return gh('/gists/' + gistId, { method: 'PATCH', body: { files: files } });
+    }).then(function () {
+      var c = syncCfg();
+      c.lastSync = Date.now();
+      delete c.lastError;
+      setSyncCfg(c);
+      lastSyncSig = syncSig();
+      setSetting('dirtySince', 0);
+      $('backupBar').hidden = true;
+    }).catch(function (e) {
+      syncingNow = false;
+      var c = syncCfg();
+      if (e.status === 404) delete c.gistId; // Gist cancellato: se ne crea un altro al prossimo giro
+      c.lastError = e.status === 401 ? 'Token non valido o scaduto: creane uno nuovo e ricollega.' :
+        e.status === 403 ? 'Il token non ha il permesso "gist", o GitHub ha limitato le richieste.' :
+        navigator.onLine ? 'Sincronizzazione non riuscita (' + (e.status || e.message) + ').' :
+        'Offline: si sincronizza appena torna la rete.';
+      setSyncCfg(c);
+    }).then(function () {
+      syncBusy = false;
+      renderSyncBox();
+      if (syncAgain) { syncAgain = false; scheduleSync(1000); }
+    });
+  }
+  // lo stesso formato di syncPayload, per confrontare remoto e locale
+  function normalizeForSig(s) {
+    return { app: 'skepticowl-vault', version: 2, favs: s.favs, plays: s.plays, last: s.last,
+      playlists: s.playlists, local: s.local, deleted: s.deleted };
+  }
+  function scheduleSync(ms) {
+    if (!syncConnected()) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncNow, ms || 4000);
+  }
+  // chiamata da save(): segna i dati da salvare e programma la sincronizzazione
+  var lastImportantSig = null;
+  function afterSave() {
+    var imp;
+    try { imp = JSON.stringify([state.favs, state.playlists, state.local]); } catch (e) { return; }
+    if (lastImportantSig !== null && imp !== lastImportantSig && !syncingNow && !Number((state.settings || {}).dirtySince)) {
+      state.settings.dirtySince = Date.now();
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignora */ }
+    }
+    lastImportantSig = imp;
+    if (!syncingNow && typeof syncCfg === 'function' && syncConnected() && syncSig() !== lastSyncSig) scheduleSync();
+  }
+
+  // dopo un'unione: canzoni importate, cartelle, elenco e stella aggiornati
+  function refreshAfterMerge() {
+    songs.filter(function (s) { return s.local; }).forEach(function (s) {
+      songs.splice(songs.indexOf(s), 1);
+      delete byId[s.id];
+    });
+    state.local.forEach(addLocalSong);
+    fillFolders();
+    if (els.viewer.hidden) render(); else updateViewerStar();
+  }
+
+  function timeAgo(t) { return t ? relTime(t) : 'mai'; }
+  function renderSyncBox(busyMsg) {
+    var box = $('syncBox'), c = syncCfg();
+    if (!box) return;
+    if (!c.token) {
+      box.innerHTML = (c.connectError ? '<p class="syncstate"><span class="syncerr">' + escapeHtml(c.connectError) + '</span></p>' : '') +
+        '<p class="muted">Salva preferiti, playlist e canzoni importate in un <b>Gist privato</b> del tuo ' +
+        'account GitHub: restano anche se il browser cancella i dati, e sono uguali su tutti i dispositivi collegati.</p>' +
+        '<ol class="muted syncsteps"><li><a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=' +
+        'Skepticowl%27s%20song%20vault" target="_blank" rel="noopener">Crea un token su GitHub &#8599;</a>: il permesso ' +
+        '"gist" è già selezionato; scegli una scadenza lunga (o "No expiration") e premi <i>Generate token</i>.</li>' +
+        '<li>Copia il token e incollalo qui sotto. Ripeti su ogni dispositivo (lo stesso token va bene).</li></ol>' +
+        '<div class="synctoken"><input id="syncToken" type="password" autocomplete="off" spellcheck="false" ' +
+        'placeholder="ghp_…" aria-label="Token GitHub"><button type="button" class="primary" id="syncConnect">Collega</button></div>';
+      return;
+    }
+    box.innerHTML = '<p class="syncstate">' + (busyMsg ? escapeHtml(busyMsg) :
+      (c.lastError ? '<span class="syncerr">' + escapeHtml(c.lastError) + '</span>' :
+        '&#10003; Sincronizzazione attiva · ultima: ' + escapeHtml(timeAgo(c.lastSync)))) + '</p>' +
+      '<div class="buttons"><button type="button" id="syncGo">Sincronizza ora</button>' +
+      '<button type="button" id="syncOff">Scollega questo dispositivo</button></div>';
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.id === 'syncConnect') {
+      var tok = ($('syncToken').value || '').trim();
+      if (!tok) { $('syncToken').focus(); return; }
+      var c = syncCfg();
+      c.token = tok; delete c.gistId; delete c.lastError; delete c.lastSync; delete c.connectError;
+      setSyncCfg(c);
+      syncNow().then(function () {
+        var c3 = syncCfg();
+        if (!c3.lastError) { toast('Sincronizzazione attiva'); return; }
+        if (!c3.lastSync) { // primo collegamento fallito: si torna al campo del token, con l'errore
+          setSyncCfg({ api: c3.api, connectError: c3.lastError });
+          renderSyncBox();
+        }
+      });
+    } else if (e.target.id === 'syncGo') {
+      syncNow();
+    } else if (e.target.id === 'syncOff') {
+      if (!window.confirm('Scollegare questo dispositivo? I dati restano qui e nel Gist; il token viene tolto da questo dispositivo.')) return;
+      var c2 = syncCfg();
+      setSyncCfg({ api: c2.api });
+      renderSyncBox();
+    }
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && syncConnected() && Date.now() - (syncCfg().lastSync || 0) > 60000) syncNow();
+  });
+  window.addEventListener('online', function () { if (syncConnected()) syncNow(); });
+
   // ---------- Avvio ----------
   function applySettings() {
     els.inText.checked = !!setting('inText', false);
@@ -1738,6 +2010,10 @@
     updateHeadHeight();
     route();
     setupServiceWorker();
+    requestPersistence();
+    lastSyncSig = null;
+    if (syncConnected()) syncNow();
+    checkBackupReminder();
   }).catch(function () {
     els.list.innerHTML = '<p class="empty">Impossibile caricare songs.json.</p>';
     updateHeadHeight();

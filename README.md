@@ -322,11 +322,38 @@ controllare) e le canzoni senza accordi riconosciuti.
   memorizzata sul dispositivo.
 - **Menu ⋮**: informazioni, stato dell'offline ed **Esporta/Importa JSON**.
 
-Preferiti, playlist, contatori, ultimo utilizzo e impostazioni restano **solo nel
-browser di quel dispositivo** (localStorage). Per portarli da un dispositivo
-all'altro: *Esporta JSON* su uno, *Importa JSON* sull'altro (l'import unisce:
-somma i preferiti e tiene i valori più alti). Cancellare i dati del sito dal
-browser li elimina.
+### Dove stanno preferiti e playlist
+
+Preferiti, playlist, canzoni importate, contatori e impostazioni sono salvati
+nel browser del dispositivo. Il browser può perderli (cancellazione dei dati,
+app di pulizia, disinstallazione dell'app su alcuni telefoni), quindi ci sono
+due protezioni:
+
+- **Sincronizzazione** (menu ⋮ → *Sincronizzazione*, consigliata): salva
+  preferiti, playlist, canzoni importate e contatori in un **Gist privato** del
+  tuo account GitHub e li tiene uguali su tutti i dispositivi collegati.
+  Si attiva una volta per dispositivo:
+  1. *Crea un token su GitHub* (il link apre la pagina con il solo permesso
+     "gist" già selezionato; scegli una scadenza lunga) e premi
+     *Generate token*;
+  2. incolla il token e premi *Collega*. Lo stesso token va bene su tutti i
+     dispositivi.
+
+  Da lì in poi la sincronizzazione è automatica (a ogni modifica, all'apertura e
+  quando torna la rete); le cancellazioni valgono ovunque, una playlist eliminata
+  su un dispositivo non ricompare dagli altri. Tema, carattere e altre
+  impostazioni restano per dispositivo. Il token resta solo sul dispositivo e non
+  finisce nelle copie su file; se perdi un telefono, revoca il token su GitHub
+  (Settings → Developer settings → Personal access tokens).
+- **Copia su file** (menu ⋮ → *Salva copia* / *Ripristina da copia*): sul
+  telefono la copia passa dal menu di condivisione (Drive, WhatsApp, email…).
+  Senza sincronizzazione, se preferiti o playlist sono cambiati da più di un
+  giorno e non sono stati salvati, compare un promemoria *Salva una copia*.
+  Il ripristino unisce i dati a quelli presenti.
+
+In più l'app chiede al browser di non cancellare i suoi dati per fare spazio, e
+se i dati salvati risultano illeggibili ne tiene una copia invece di
+sovrascriverli.
 
 **Installazione**: su Android (Chrome) compare da solo un invito
 *Installa Song vault*; "Non ora" lo rimanda di 14 giorni, e il pulsante resta

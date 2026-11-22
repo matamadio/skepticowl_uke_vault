@@ -18,7 +18,7 @@
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="style.css?v=03a32b0e">
+<link rel="stylesheet" href="style.css?v=654c7ccc">
 </head>
 <body>
 
@@ -149,17 +149,25 @@
       <button type="button" data-theme-set="dark">Scuro</button>
     </div>
     <div class="buttons"><button id="menuImportSong" type="button">Importa canzone (da Ultimate Guitar…)</button></div>
-    <h3>Stato su questo dispositivo</h3>
-    <p class="muted">Preferiti, contatori, ultimo utilizzo e impostazioni restano solo in questo browser. Esportali per spostarli su un altro dispositivo.</p>
+    <h3>Sincronizzazione</h3>
+    <div id="syncBox"></div>
+    <h3>Copia su file</h3>
+    <p class="muted">Senza sincronizzazione, preferiti, playlist e canzoni importate stanno solo in questo browser. Una copia su file ti permette di ripristinarli o spostarli.</p>
     <div class="buttons">
-      <button id="exportBtn" type="button">Esporta JSON</button>
-      <button id="importBtn" type="button">Importa JSON</button>
+      <button id="exportBtn" type="button">Salva copia</button>
+      <button id="importBtn" type="button">Ripristina da copia</button>
       <input id="importFile" type="file" accept="application/json,.json" hidden>
     </div>
     <p id="menuMsg" class="muted" aria-live="polite"></p>
     <div class="buttons end"><button value="close">Chiudi</button></div>
   </form>
 </dialog>
+
+<div id="backupBar" class="installbar" role="dialog" aria-label="Copia di sicurezza" hidden>
+  <div class="installtext"><strong>Salva una copia di preferiti e playlist</strong><span>Ora stanno solo in questo browser. Oppure attiva la sincronizzazione nel menu &#8942;.</span></div>
+  <button id="backupNo" type="button">Più tardi</button>
+  <button id="backupYes" type="button" class="primary">Salva copia</button>
+</div>
 
 <div id="installBar" class="installbar" role="dialog" aria-label="Installa l'app" hidden>
   <img src="icons/icon-192.png" alt="" width="40" height="40">
@@ -170,6 +178,6 @@
 
 <script src="reflow.js?v=969364aa"></script>
 <script src="chords.js?v=29f29e73"></script>
-<script src="app.js?v=9a665dfc"></script>
+<script src="app.js?v=98546d66"></script>
 </body>
 </html>
