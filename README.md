@@ -22,6 +22,7 @@ build sulla cartella vera.
 | `sw.js`, `manifest.webmanifest`, `icons/` | App installabile e uso offline |
 | `songs/`, `songs.json`, `canzonieri/`, `canzonieri.json` | **Generati** dal build: non modificarli a mano |
 | `reflow.js`, `tools/test_reflow.js` | Modalità *A capo* e il suo test su tutte le canzoni (`node tools/test_reflow.js`, gira anche su GitHub a ogni modifica) |
+| `tools/Aggiorna sito.bat`, `tools/aggiorna.bat` | Aggiornamento con un doppio clic dalla cartella Uke |
 | `tools/esempi/` | Txt di prova (tab, accordi allineati, cp1252, UTF-16, righe lunghe) |
 
 ## Prima installazione
@@ -87,6 +88,29 @@ Serve Python 3.9 o più recente (solo libreria standard) e Git.
 > Il repository è pubblico: chiunque abbia il link può leggere i testi.
 
 ## Aggiornare le canzoni
+
+### Con un doppio clic (consigliato)
+
+Una volta sola: copia `tools\Aggiorna sito.bat` nella cartella delle canzoni
+(`X:\Dropbox\Public\Uke`). Se il repository sul PC non è in
+`C:\Users\matti\Documents\GitHub\skepticowl_uke_vault`, apri il file con il
+Blocco note (tasto destro → Modifica) e correggi la riga `REPO`.
+
+Da quel momento, dopo aver aggiunto o modificato delle canzoni, fai doppio clic
+su **Aggiorna sito.bat** nella cartella Uke. Il file fa tutto da solo:
+
+1. scarica gli aggiornamenti da GitHub (`git pull`);
+2. rigenera la lista delle canzoni dalla cartella Uke (`tools/build.py`);
+3. salva le modifiche (`git add` + `git commit`), oppure dice che non c'è
+   niente da aggiornare;
+4. pubblica (`git push`).
+
+La finestra resta aperta alla fine, con il riepilogo del build o l'eventuale
+errore spiegato. Servono Python e Git installati (gli stessi dei comandi
+qui sotto). Il lavoro vero lo fa `tools\aggiorna.bat`, che arriva con
+`git pull`: le correzioni future non richiedono di ricopiare niente.
+
+### A mano
 
 Ogni volta che aggiungi, modifichi, rinomini o cancelli dei txt in Dropbox:
 
