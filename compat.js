@@ -103,4 +103,67 @@
       if (e.key === 'Escape' && d.open) { e.preventDefault(); e.stopPropagation(); d.close(); }
     }, true);
   });
+
+  // Firefox vecchio (prima del 61): position: sticky si muove a scatti e con centinaia
+  // di elementi si blocca. Barre fisse (style.css, .ff-old) e un'unica etichetta con
+  // l'artista corrente al posto dei nomi adesivi.
+  if (window.CSS && CSS.supports && CSS.supports('-moz-appearance', 'none') && !CSS.supports('gap', '1px')) {
+    var root = document.documentElement;
+    root.classList.add('ff-old');
+    var head = document.querySelector('#listView .sticky');
+    var vbar = document.querySelector('#viewer .vbar');
+    var list = document.getElementById('list');
+    var label = document.createElement('div');
+    label.className = 'group curgroup';
+    label.hidden = true;
+    label.setAttribute('aria-hidden', 'true');
+    head.appendChild(label);
+
+    var marks = null; // posizioni delle intestazioni, ricalcolate quando cambia l'elenco
+    var shown = null, queued = false;
+    var readMarks = function () {
+      marks = Array.prototype.map.call(list.querySelectorAll('.group, .section'), function (el) {
+        return { el: el, top: el.getBoundingClientRect().top + window.pageYOffset };
+      });
+    };
+    var update = function () {
+      queued = false;
+      if (head.offsetParent === null && !head.offsetHeight) return; // elenco nascosto
+      if (!marks) readMarks();
+      var y = window.pageYOffset + head.offsetHeight, lo = 0, hi = marks.length;
+      while (lo < hi) {
+        var mid = (lo + hi) >> 1;
+        if (marks[mid].top <= y) lo = mid + 1; else hi = mid;
+      }
+      var el = lo ? marks[lo - 1].el : null;
+      if (el && !el.classList.contains('group')) el = null;
+      if (el === shown) return;
+      shown = el;
+      label.hidden = !el;
+      if (el) label.innerHTML = el.innerHTML;
+    };
+    var queue = function () {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(update);
+    };
+    var layout = function () {
+      if (head.offsetHeight) root.style.setProperty('--head-h', head.offsetHeight + 'px');
+      if (vbar.offsetHeight) root.style.setProperty('--vbar-h', vbar.offsetHeight + 'px');
+      marks = null;
+      shown = undefined;
+      queue();
+    };
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', layout);
+    window.addEventListener('load', layout);
+    // elenco ridisegnato o spostato (filtri), barra del visualizzatore più alta o più bassa
+    var watch = function (el, opts) { new MutationObserver(layout).observe(el, opts); };
+    watch(list, { childList: true });
+    watch(document.querySelector('.listhead'), { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    watch(vbar, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    watch(document.getElementById('viewer'), { attributes: true, attributeFilter: ['hidden'] });
+    watch(document.getElementById('listView'), { attributes: true, attributeFilter: ['hidden'] });
+    layout();
+  }
 })();

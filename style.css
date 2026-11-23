@@ -650,3 +650,9 @@ dialog.compat[open] { display: block; }
     .vbar > .vrow:first-child { margin-right: 12px; }
   }
 }
+/* Firefox prima del 61: barre fisse al posto di quelle adesive (vedi compat.js) */
+.ff-old .sticky, .ff-old .vbar { position: fixed; left: 0; right: 0; }
+.ff-old #listView { padding-top: var(--head-h, 0px); }
+.ff-old #viewer { padding-top: var(--vbar-h, 0px); }
+.ff-old .list .group { position: static; }
+.ff-old .curgroup { position: absolute; top: 100%; left: 0; right: 0; font-weight: 700; }
