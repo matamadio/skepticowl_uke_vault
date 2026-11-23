@@ -165,5 +165,67 @@
     watch(document.getElementById('viewer'), { attributes: true, attributeFilter: ['hidden'] });
     watch(document.getElementById('listView'), { attributes: true, attributeFilter: ['hidden'] });
     layout();
+
+    // Schermo sempre acceso: qui non c'è Wake Lock, ma Firefox non fa spegnere lo
+    // schermo mentre c'è un video in riproduzione. app.js lo chiede quando si apre una
+    // canzone: un video nero, muto e minuscolo (30 s, 1 fotogramma al secondo) in ciclo.
+    // Firefox ignora play() finché non si tocca la pagina: il primo tocco lo sblocca.
+    if (!('wakeLock' in navigator)) {
+      var wanted = false, unlocked = false;
+      var video = document.createElement('video');
+      video.muted = true;
+      video.loop = true;
+      video.className = 'awake';
+      video.setAttribute('aria-hidden', 'true');
+      video.src = 'data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAVTEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEfTbuMU6uEHFO7a1OsggU97AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNTguNDUuMTAwV0GNTGF2ZjU4LjQ1LjEwMESJiEDdTAAAAAAAFlSua8KuAQAAAAAAADnXgQFzxYgmNyh8muq0w5yBACK1nIN1bmSGhVZfVlA4g4EBI+ODhDuaygDgAQAAAAAAAAawgSC6gSASVMNnQJlzcwEAAAAAAAAnY8CAZ8gBAAAAAAAAGkWjh0VOQ09ERVJEh41MYXZmNTguNDUuMTAwc3MBAAAAAAAAXmPAi2PFiCY3KHya6rTDZ8gBAAAAAAAAIUWjh0VOQ09ERVJEh5RMYXZjNTguOTEuMTAwIGxpYnZweGfIokWjiERVUkFUSU9ORIeUMDA6MDA6MzAuMDAwMDAwMDAwAAAfQ7Z1QLXngQCjpIEAAIAwAgCdASogACAAAEcIhYWImYSIAgIAB5DzycD+/6tQgKOagQPoANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmoEH0ADRAQABEBAAGAAeV/QMAA+YAP7/q1CAo5qBC7gA0QEAARAQABgAHlf0DAAPmAD+/6tQgKOagQ+gANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmoETiADRAQABEBAAGAAeV/QMAA+YAP7/q1CAH0O2dUCr54IXcKOagQAAANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmYED6ACxAQABEBAUYAB5X9AwAD5g/v+rUICjmoEH0ADRAQABEBAAGAAeV/QMAA+YAP7/q1CAo5qBC7gA0QEAARAQABgAHlf0DAAPmAD+/6tQgKOagQ+gANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmoETiADRAQABEBAAGAAeV/QMAA+YAP7/q1CAH0O2dUCr54Iu4KOagQAAANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmoED6ADRAQABEBAAGAAeV/QMAA+YAP7/q1CAo5mBB9AAsQEAARAQFGAAeV/QMAA+YP7/q1CAo5qBC7gA0QEAARAQABgAHlf0DAAPmAD+/6tQgKOagQ+gANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmoETiADRAQABEBAAGAAeV/QMAA+YAP7/q1CAH0O2dUCr54JGUKOagQAAANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmoED6ADRAQABEBAAGAAeV/QMAA+YAP7/q1CAo5qBB9AA0QEAARAQABgAHlf0DAAPmAD+/6tQgKOZgQu4ALEBAAEQEBRgAHlf0DAAPmD+/6tQgKOagQ+gANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmoETiADRAQABEBAAGAAeV/QMAA+YAP7/q1CAH0O2dUCr54JdwKOagQAAANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmoED6ADRAQABEBAAGAAeV/QMAA+YAP7/q1CAo5qBB9AA0QEAARAQABgAHlf0DAAPmAD+/6tQgKOagQu4ANEBAAEQEAAYAB5X9AwAD5gA/v+rUICjmYEPoACxAQABEBAUYAB5X9AwAD5g/v+rUICjmoETiADRAQABEBAAGAAeV/QMAA+YAP7/q1CAHFO7a5G7j7OBALeK94EB8YIBvvCBAw==';
+      document.body.appendChild(video);
+      document.addEventListener('click', function () {
+        if (unlocked && !(wanted && video.paused)) return;
+        video.play();
+        unlocked = !video.paused;
+        if (!wanted) video.pause();
+      }, true);
+      navigator.wakeLock = {
+        request: function () {
+          wanted = true;
+          video.play();
+          return Promise.resolve({
+            addEventListener: function () {},
+            release: function () { wanted = false; video.pause(); return Promise.resolve(); }
+          });
+        }
+      };
+    }
+
+    // Schermo intero: i browser recenti lo hanno installando l'app, qui serve un pulsante
+    if (root.mozRequestFullScreen && document.mozFullScreenEnabled) {
+      var ICON_IN = '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>';
+      var ICON_OUT = '<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>';
+      var buttons = [];
+      var addFull = function (parent, before) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'icon fullbtn';
+        b.addEventListener('click', function () {
+          if (document.mozFullScreenElement) document.mozCancelFullScreen();
+          else root.mozRequestFullScreen();
+        });
+        parent.insertBefore(b, before);
+        buttons.push(b);
+      };
+      var drawFull = function () {
+        var on = !!document.mozFullScreenElement;
+        buttons.forEach(function (b) {
+          b.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">' +
+            (on ? ICON_OUT : ICON_IN) + '</svg>';
+          b.title = on ? 'Esci da schermo intero' : 'Schermo intero';
+          b.setAttribute('aria-label', b.title);
+        });
+      };
+      addFull(document.querySelector('.titletools'), document.getElementById('themeBtn'));
+      addFull(vbar.querySelector('.vrow'), null);
+      document.addEventListener('mozfullscreenchange', drawFull);
+      drawFull();
+    }
   }
 })();
