@@ -19,6 +19,7 @@ build sulla cartella vera.
 | `videos.json` | Video YouTube da mostrare in fondo alle canzoni (nome del file → link) |
 | `config.json` | Sezioni a parte (`cazzate`), cartella dei canzonieri e PDF da escludere |
 | `index.html`, `app.js`, `style.css` | L'app: elenco + visualizzatore |
+| `compat.js` | Funzioni mancanti nei browser vecchi (Firefox 52 sul tablet Android 4.0); in quelli recenti non fa nulla |
 | `sw.js`, `manifest.webmanifest`, `icons/` | App installabile e uso offline |
 | `songs/`, `songs.json`, `canzonieri/`, `canzonieri.json` | **Generati** dal build: non modificarli a mano |
 | `reflow.js`, `tools/test_reflow.js` | Modalità *A capo* e il suo test su tutte le canzoni (`node tools/test_reflow.js`, gira anche su GitHub a ogni modifica) |

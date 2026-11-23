@@ -116,8 +116,13 @@
   function fold(s) {
     return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   }
+  // Scritta come letterale, \p{...} bloccherebbe tutto lo script nei browser che non la conoscono
+  var NOT_WORD;
+  try { NOT_WORD = new RegExp("[^\\p{L}\\p{N}_']+", 'gu'); } catch (e) {
+    NOT_WORD = /[^\w'\u00aa\u00b5\u00ba\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02ff\u0370-\u1fff\u2c00-\u2dff\u3040-\ud7ff]+/g;
+  }
   function foldSearch(s) {
-    return fold(s).replace(/[^\p{L}\p{N}_']+/gu, ' ').trim();
+    return fold(s).replace(NOT_WORD, ' ').trim();
   }
   var collator = new Intl.Collator('it', { sensitivity: 'base', numeric: true });
 
@@ -447,7 +452,7 @@
       p.songs.forEach(function (sid, i) {
         var s = byId[sid];
         html.push('<div class="song plrow" data-idx="' + i + '">' +
-          '<span class="handle" title="Trascina per spostare" aria-hidden="true">&#8942;&#8942;</span>' +
+          '<span class="handle" title="Trascina per spostare" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="8" cy="5" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="8" cy="19" r="2"/><circle cx="16" cy="5" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="16" cy="19" r="2"/></svg></span>' +
           '<span class="num">' + (i + 1) + '</span>' +
           (s ? '<a href="#/song/' + sid + '?pl=' + p.id + '" data-open="' + sid + '"><span class="t">' + escapeHtml(s.title) +
             '</span>' + (s.artist ? '<span class="m">' + escapeHtml(s.artist) + '</span>' : '') + '</a>'

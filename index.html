@@ -18,7 +18,7 @@
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="style.css?v=654c7ccc">
+<link rel="stylesheet" href="style.css?v=58d9ebd9">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
       <h1>Skepticowl's song vault</h1>
       <div class="titletools">
         <button id="themeBtn" class="icon" type="button" aria-label="Tema" title="Tema: automatico"></button>
-        <button id="menuBtn" class="icon" type="button" aria-label="Menu" title="Menu">&#8942;</button>
+        <button id="menuBtn" class="icon" type="button" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
       </div>
     </div>
     <nav id="tabs" class="tabs">
@@ -70,7 +70,7 @@
       <button id="backBtn" class="icon" type="button" aria-label="Indietro" title="Indietro (Esc)">&#8592;</button>
       <button id="vStar" class="star" type="button" aria-label="Preferito" title="Preferito">&#9734;</button>
       <div class="vtitle"><span id="vTitle"></span><span id="vArtist" class="vartist"></span></div>
-      <button id="plAddBtn" class="icon pladd" type="button" title="Aggiungi a una playlist" aria-label="Aggiungi a una playlist">&#9776;<sup>+</sup></button>
+      <button id="plAddBtn" class="icon pladd" type="button" title="Aggiungi a una playlist" aria-label="Aggiungi a una playlist"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg><sup>+</sup></button>
     </div>
     <div id="plBar" class="vrow plbar" hidden>
       <button id="plPrev" type="button" aria-label="Canzone precedente" title="Precedente (P)">&#9664;</button>
@@ -164,7 +164,7 @@
 </dialog>
 
 <div id="backupBar" class="installbar" role="dialog" aria-label="Copia di sicurezza" hidden>
-  <div class="installtext"><strong>Salva una copia di preferiti e playlist</strong><span>Ora stanno solo in questo browser. Oppure attiva la sincronizzazione nel menu &#8942;.</span></div>
+  <div class="installtext"><strong>Salva una copia di preferiti e playlist</strong><span>Ora stanno solo in questo browser. Oppure attiva la sincronizzazione nel menu in alto a destra.</span></div>
   <button id="backupNo" type="button">Più tardi</button>
   <button id="backupYes" type="button" class="primary">Salva copia</button>
 </div>
@@ -176,8 +176,9 @@
   <button id="installYes" type="button" class="primary">Installa</button>
 </div>
 
+<script src="compat.js?v=88a36e65"></script>
 <script src="reflow.js?v=969364aa"></script>
 <script src="chords.js?v=29f29e73"></script>
-<script src="app.js?v=98546d66"></script>
+<script src="app.js?v=c717debf"></script>
 </body>
 </html>
