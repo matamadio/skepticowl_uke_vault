@@ -656,3 +656,4 @@ dialog.compat[open] { display: block; }
 .ff-old #viewer { padding-top: var(--vbar-h, 0px); }
 .ff-old .list .group { position: static; }
 .ff-old .curgroup { position: absolute; top: 100%; left: 0; right: 0; font-weight: 700; }
+.ff-old .awake { position: fixed; left: 0; bottom: 0; width: 2px; height: 2px; opacity: .01; pointer-events: none; }
