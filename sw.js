@@ -5,13 +5,13 @@
 // cache sono per origine: nomi con il prefisso dell'app, e all'aggiornamento si
 // cancellano solo le cache di questa app (mai quelle degli altri siti).
 var PREFIX = 'skepticowl-vault-';
-var SHELL = PREFIX + 'shell-v6';
+var SHELL = PREFIX + 'shell-v7';
 var SONGS = PREFIX + 'songs-v1';
 var BOOKS = PREFIX + 'canzonieri-v1';
 var OLD = ['vault-shell-v1', 'vault-shell-v2', 'vault-shell-v3', 'vault-shell-v4', 'vault-shell-v5',
   'vault-songs-v1', 'vault-canzonieri-v1']; // nomi usati dalle versioni precedenti
 var SHELL_FILES = [
-  './', 'index.html', 'app.js', 'chords.js', 'reflow.js', 'style.css', 'songs.json', 'manifest.webmanifest',
+  './', 'index.html', 'app.js', 'compat.js', 'chords.js', 'reflow.js', 'style.css', 'songs.json', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'
 ];
 
@@ -112,6 +112,9 @@ function precache(urls, report) {
         });
       });
     });
-  }).finally(function () { running = null; });
+  });
+  // niente .finally: Firefox 52 non ce l'ha
+  function clear() { running = null; }
+  running.then(clear, clear);
   return running;
 }
