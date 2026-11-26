@@ -1,60 +1,58 @@
-The Universe Song  from _The Meaning of Life_ by Monty Python
+Monty Phyton - The galaxy song
 
-*Intro*
-(Spoken... music creeps in towards the end...)
-Whenever life gets you down, Mrs. Brown
-And things seem sad or tough
-And people are useless, obnoxious, or daft,
-And you feel that you've had quite enough... (G)
+[Intro] (Spoken... music creeps in towards the end...)
 
+[Bm7]Whenever life gets you [C] down, Mrs. Brown
+[Bm7]And things seem sad or [C] tough
+[Bm7]And people are useless, or [C] obnoxious, or [A7] daft,
+And you [Dm] feel that you've had quite [G7]enough...
 
-*Verse I*
-G    G7
-Just re-
-C
-member that you're standing on a planet that's evolving
-C                                  G
-revolving at nine-hundred miles an hour
-G7
-and orbiting at nineteen miles a second, so it's reckoned,
-                                    C
-a sun that is the source of all our power.
-C
-Now the sun and you and me, and all the stars that we can see
-A7                           F
-Are moving a million miles a day
-F7                               C
-In an outer spiral arm at forty thousand miles an hour
-G7                              C
-of the galaxy we call the Milky Way.
+[Verse 1]
 
-(chords same for all verses)
+[G7]Just re[C]member that you're [Cmaj7]standing on a [Am]planet that's [C]evolving,
+revolving 900miles an [G]hour
+and [G7]orbiting at 19 miles a second, so it's reckoned,
+a [G]sun that is the source of all our [C]power.
+Now the [C]sun and you and [Cmaj7]me, and all the [Am]stars that we can [C]see
+are [A7]moving a million miles a [Dm]day
+In an [F]outer spiral arm at forty [C]thousand miles an [Am7]hour
+of the [Dm]galaxy we [G]call the Milky [C]Way.
 
-*Verse II*
-Our galaxy itself contains a hundred million stars,
-it's a hundred thousand light-years side to side,
-it bulges in the middle, sixty thousand light-years thick,
-but out by us it's just three thousand light-years wide.
-We're thiry thousand light-years from galactic central point
-We go 'round every two hundred million years,
-and our galaxy itself is one of millions of billions in this
-Amazing and Expanding Universe!
+[Verse 2]
 
-Break -- odd animations...
+Our [C]galaxy it[Cmaj7]self contains a [Am]hundred million [C]stars,
+it's a hundred thousand light-years side to [G]side,
+it [G7]bulges in the middle, sixty thousand light-years thick,
+but out by [G]us it's 3000 light-years [C]wide.
+We're 30 thousand [Cmaj7]light-years from ga[Am]lactic central [C]point,
+we go [A7]'round every 200million [Dm]years,
+and our [F]galaxy itself is one of [C]millions of [Am7]billions
+in this A[Dm]mazing and Ex[G]panding Uni[C]verse!
 
-*Verse III*
-The universe itself keeps on expanding and expanding
-in all of the directions it can whiz,
-as fast as it can go, the speed of light, y'know,
-twelve million miles a minute, and that's the fastest speed there is,
-So remember when you're feeling very small and insecure
-How amazingly unlikely is your birth,
-And pray that there's intelligent life somewhere up in space,
-'Cause there's bugger-all down here on Earth.
+[Verse 3]
 
+[C]The universe [Cmaj7]itself keeps on ex[Am]panding and ex[C]panding
+in all of the directions it can [G]whiz,
+as [G7]fast as it can go, the speed of light, y'know,
+twelve [G] million miles a minute, and that's the [C]fastest speed there is,
+So re[C]member when you're [Cmaj7]feeling very [Am]small and inse[C]cure
+How a[A7]mazingly unlikely is your [Dm]birth,
+And [F]pray that there's intelligent life [C]somewhere up in [Am7]space,
+'Cause there's [Dm]bugger-all [G]down here on [C]Earth.
+
+G7 C      Cmaj7 Am   C             G     G7                   G          C
+A|--3-33-3-22-2-00-0----------0-01-12--2-5-55-533-322-2200--0-2-----0-0----|
+E|-3----------------33--2/33-3-----------2--------------------3-33-3-3-3-0-|
+C|---------------------------------------3--------------------2------------|
+
+ G7 C      Cmaj7 Am      C   A7      Dm  F      C         Dm    G   C
+A|--3-33-3-22-2-00-00-----0-2-5-7-8--8--88--8---7--77--7--55--5-2-5-3-|
+E|-3-----------------33--3-3-3----5--8-8---8---5--5---5--3---3-3------|
+C|--------------------------------5--9--------------------------------|
+G|--------------------------------5--10-------------------------------|
 
 
-
+---------
 
 
 D 	       A7 D
