@@ -712,7 +712,8 @@
     return '<div class="song">' +
       '<button class="star' + (fav ? ' on' : '') + '" type="button" data-fav="' + s.id + '" aria-pressed="' + fav +
       '" aria-label="Preferito">' + (fav ? '★' : '☆') + '</button>' +
-      '<a href="#/song/' + s.id + '" data-open="' + s.id + '"><span class="t">' + escapeHtml(s.title) + '</span>' +
+      '<a href="#/song/' + s.id + '" data-open="' + s.id + '"><span class="t">' +
+      (s.pdf ? '<span class="pdftag">PDF</span>' : '') + escapeHtml(s.title) + '</span>' +
       (m.length ? '<span class="m">' + m.join(' · ') + '</span>' : '') + '</a></div>';
   }
 
@@ -889,6 +890,8 @@
       els.vArtist.textContent = '';
       $('ytBox').innerHTML = '';
       $('localBar').hidden = true;
+      $('pdfBox').hidden = true;
+      $('viewer').classList.remove('ispdf');
       showMessage('Questa canzone non esiste più (forse è stata rinominata).');
       return;
     }
@@ -908,6 +911,9 @@
 
     var token = ++loadToken;
     renderLocalBar(s);
+    $('viewer').classList.toggle('ispdf', !!s.pdf);
+    $('pdfBox').hidden = !s.pdf;
+    if (s.pdf) { showPdf(s); return; }
     (s.local ? Promise.resolve(s.raw) : fetch(songUrl(s)).then(function (r) {
       if (!r.ok) throw new Error(r.status);
       return r.text();
@@ -1128,6 +1134,18 @@
     b.replaceWith(f);
   });
 
+  // ---------- Spartiti in PDF ----------
+  // Su PC il PDF si vede dentro la pagina; sui telefoni (dove i browser non
+  // mostrano i PDF incorporati) c'è il pulsante per aprirlo.
+  function showPdf(s) {
+    var url = songUrl(s), box = $('pdfBox');
+    els.text.className = 'msg';
+    els.text.textContent = '';
+    box.innerHTML = '<p class="pdfinfo"><span class="pdftag">PDF</span> Spartito in PDF · ' + formatSize(s.size || 0) + '</p>' +
+      '<p><a class="primary pdfopen" href="' + url + '" target="_blank" rel="noopener">Apri il PDF &#8599;</a></p>' +
+      (isMobile() ? '' : '<iframe class="pdfframe" src="' + url + '" title="' + escapeHtml(s.title) + '"></iframe>');
+  }
+
   // ---------- Scorrimento automatico ----------
   var scrolling = false, lastT = 0, carry = 0, rafId = 0;
   // pixel al secondo: da 3 (circa una riga ogni 6 s) a 22 (circa una riga al secondo), a passi di 1
@@ -1302,7 +1320,8 @@
       if (reg.active && songs.length) {
         reg.active.postMessage({
           type: 'precache',
-          urls: songs.map(function (s) { return new URL(songUrl(s), location.href).href; })
+          // i PDF si salvano per l'offline solo quando si aprono (possono essere pesanti)
+          urls: songs.filter(function (s) { return !s.pdf; }).map(function (s) { return new URL(songUrl(s), location.href).href; })
         });
       }
     }).catch(function () { /* niente offline */ });

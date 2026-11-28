@@ -292,8 +292,8 @@ def load_config(path):
 
 
 def collect(source, recursive, sections):
-    """I .txt della cartella principale e delle sezioni (non delle loro
-    sottocartelle); con recursive tutti."""
+    """I .txt e i .pdf della cartella principale e delle sezioni (non delle
+    loro sottocartelle); con recursive tutti."""
     sections = {d.casefold() for d in sections}
     found, ignored, skipped_dirs = [], collections.Counter(), []
     for root, dirs, files in os.walk(source):
@@ -308,7 +308,7 @@ def collect(source, recursive, sections):
             ext = os.path.splitext(name)[1].lower()
             if name.startswith("_"):
                 ignored["file che iniziano con _"] += 1
-            elif ext == ".txt" and not name.startswith("."):
+            elif ext in (".txt", ".pdf") and not name.startswith("."):
                 found.append(os.path.join(root, name))
             else:
                 ignored[ext or "(senza estensione)"] += 1
@@ -423,8 +423,38 @@ def main(argv=None):
     chord_doubts = collections.defaultdict(list)
     instrumental = {}
     tags = load_tags(os.path.join(out, "tags.json"))
+    pdf_songs, pdf_big = [], []
     for src in files:
         rel = os.path.relpath(src, source).replace(os.sep, "/")
+        if rel.lower().endswith(".pdf"):
+            # spartito in PDF: si copia così com'è e compare nell'elenco con le canzoni
+            size = os.path.getsize(src)
+            if size > 95 * 1024 * 1024:  # GitHub rifiuta i file oltre 100 MB
+                pdf_big.append(rel)
+                continue
+            dst = os.path.join(songs_dir, *rel.split("/"))
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copyfile(src, dst)
+            sid = song_id(rel)
+            if sid in ids:
+                sys.exit("Id duplicato per %s e %s" % (ids[sid], rel))
+            ids[sid] = rel
+            stem = os.path.splitext(rel.rpartition("/")[2])[0]
+            artist, title = split_name(stem)
+            artist = aliases.get(artist_key(clean_artist(artist) or song_artists.get(fold(stem.strip()), "")),
+                                 clean_artist(artist) or song_artists.get(fold(stem.strip()), ""))
+            instrumental[sid] = False
+            mtime = datetime.datetime.fromtimestamp(os.stat(src).st_mtime, datetime.timezone.utc)
+            songs.append({
+                "id": sid, "artist": artist, "title": title, "folder": rel.rpartition("/")[0], "path": rel,
+                "mtime": mtime.strftime("%Y-%m-%dT%H:%M:%SZ"), "h": file_hash(src), "text": "", "chords": [],
+                "pdf": True, "size": size,
+            })
+            yt = videos.get(fold(stem.strip()))
+            if yt:
+                songs[-1]["yt"] = yt
+            pdf_songs.append(size)
+            continue
         with open(src, "rb") as f:
             text, enc = decode(f.read())
         encodings[enc] += 1
@@ -511,6 +541,10 @@ def main(argv=None):
 
     # Riepilogo
     print("Canzoni: %d (in %s)" % (len(songs), songs_dir))
+    if pdf_songs or pdf_big:
+        print("  di cui PDF: %d, %.1f MB" % (len(pdf_songs), sum(pdf_songs) / 1048576))
+    if pdf_big:
+        print("  ATTENZIONE, PDF oltre 95 MB non copiati (GitHub li rifiuta): " + ", ".join(pdf_big))
     print("Codifiche: " + ", ".join("%s %d" % kv for kv in encodings.most_common()))
     folders = collections.Counter(s["folder"] or "(principale)" for s in songs)
     print("Cartelle: " + ", ".join("%s %d" % kv for kv in sorted(folders.items())))
@@ -579,7 +613,7 @@ def main(argv=None):
             f.write("  %s: %s\n" % (c, ", ".join(sorted(chord_doubts[c]))))
         f.write("\nCanzoni senza accordi riconosciuti\n\n")
         for s in songs:
-            if not s["chords"]:
+            if not s["chords"] and not s.get("pdf"):
                 f.write("  %s\n" % s["path"])
     print("  rapporto completo: %s" % report)
     print("\nVersione: %s" % version)
