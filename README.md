@@ -24,6 +24,7 @@ build sulla cartella vera.
 | `songs/`, `songs.json`, `canzonieri/`, `canzonieri.json` | **Generati** dal build: non modificarli a mano |
 | `reflow.js`, `tools/test_reflow.js` | Modalità *A capo* e il suo test su tutte le canzoni (`node tools/test_reflow.js`, gira anche su GitHub a ogni modifica) |
 | `tools/Aggiorna sito.bat`, `tools/aggiorna.bat` | Aggiornamento con un doppio clic dalla cartella Uke |
+| `vendor/pdfjs/` | PDF.js (Mozilla, licenza Apache 2.0) per mostrare gli spartiti PDF nella pagina |
 | `tools/esempi/` | Txt di prova (tab, accordi allineati, cp1252, UTF-16, righe lunghe) |
 
 ## Prima installazione
@@ -57,9 +58,9 @@ Serve Python 3.9 o più recente (solo libreria standard) e Git.
      modo più rapido per nascondere una canzone o un canzoniere;
    - mette nell'elenco anche gli **spartiti in PDF** della cartella `Uke` (e
      di `cazzate`): stesso nome `Artista - Titolo.pdf`, stessi artisti, tag e
-     video dei `.txt`, con l'etichetta *PDF*. Su PC il PDF si vede dentro la
-     pagina, sul telefono con il pulsante *Apri il PDF*. Restano offline dopo
-     la prima apertura. I PDF oltre 95 MB vengono saltati (GitHub li rifiuta);
+     video dei `.txt`, con l'etichetta *PDF*. Il PDF si vede direttamente nella
+     pagina della canzone, anche sul telefono (con PDF.js, in `vendor/pdfjs`),
+     e resta disponibile offline dopo la prima apertura. I PDF oltre 95 MB vengono saltati (GitHub li rifiuta);
    - ignora tutto ciò che non è `.txt` o `.pdf` (pdf, docx, gp5, midi, immagini, `.lnk`);
    - riconosce la codifica (UTF-16 con BOM, UTF-8 con o senza BOM,
      altrimenti cp1252) e salva tutto in UTF-8; spazi e tab restano identici,

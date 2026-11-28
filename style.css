@@ -680,6 +680,16 @@ dialog.compat[open] { display: block; }
   text-decoration: none;
   font-weight: 600;
 }
-.pdfframe { width: 100%; height: 80vh; border: 1px solid var(--line); border-radius: 8px; margin-top: 12px; background: #fff; }
-/* nel visualizzatore di un PDF non servono i comandi per il testo */
-#viewer.ispdf .tools, #viewer.ispdf #chordStrip, #viewer.ispdf .scroller { display: none; }
+.pdfinfo a { color: var(--accent); }
+.pdfpages { max-width: 900px; margin: 0 auto; padding-bottom: 30vh; }
+.pdfpage {
+  width: 100%;
+  aspect-ratio: 1 / var(--ratio, 1.414);
+  margin: 0 0 10px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / .2);
+}
+.pdfpage canvas { display: block; width: 100%; height: auto; }
+/* nel visualizzatore di un PDF restano solo lo scorrimento automatico e il resto della testata */
+#viewer.ispdf .tools .seg:not([aria-label="Scorrimento automatico"]), #viewer.ispdf #chordStrip, #viewer.ispdf .scroller { display: none; }
+#viewer.ispdf .pdfbox { padding: 10px 8px; }
