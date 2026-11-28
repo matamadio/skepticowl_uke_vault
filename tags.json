@@ -4,10 +4,18 @@
     "auto": "strumentali",
     "artisti": [
       "Bach",
-      "Edward Grieg",
-      "Wim Mertens"
+      "Edvard Grieg",
+      "Wim Mertens",
+      "Herb Ohta",
+      "Astor Piazzolla",
+      "Michael Nyman",
+      "Maurice Ravel",
+      "Yann Tiersen",
+      "Beethoven"
     ],
-    "canzoni": [],
+    "canzoni": [
+      "Traditional - Bouree"
+    ],
     "escludi": []
   },
   "Facili": {
@@ -22,7 +30,6 @@
       "Angelo Branduardi",
       "Paolo Conte",
       "Giorgio Gaber",
-      "Francesco Guccini",
       "Jannacci",
       "Stefano Rosso",
       "Cesare Cremonini"
@@ -106,7 +113,8 @@
       "Chuck Berry",
       "Elvis",
       "Harry Nilsson",
-      "GVF"
+      "GVF",
+      "Dire straits"
     ]
   },
   "Metal & hard rock": {
@@ -176,7 +184,8 @@
       "Lodger",
       "BPA",
       "The Servant",
-      "Red goes black"
+      "Red goes black",
+      "Smashing pumpkins"
     ]
   },
   "Folk & tradizionali": {
@@ -211,7 +220,13 @@
       "Norma Tanega",
       "Rose city band",
       "Asaf Avidan",
-      "Kishi Bashi"
+      "Kishi Bashi",
+      "Traditional"
+    ],
+    "escludi": [
+      "Traditional - Bouree",
+      "Traditional - Brazil",
+      "Traditional - Misirlou"
     ]
   },
   "Trip-hop & elettronica": {
@@ -239,7 +254,8 @@
       "Engelwood",
       "Metronomy",
       "Owl city",
-      "Sault"
+      "Sault",
+      "Hot butter"
     ]
   },
   "Swing, jazz & bossa": {
@@ -250,7 +266,6 @@
       "Nina Simone",
       "Peggy Lee",
       "The ink spots",
-      "The Chordettes",
       "Antônio Carlos Jobim",
       "Sergio Mendes",
       "Buena Vista Social Club",
@@ -262,7 +277,15 @@
       "Bobby McFerrin",
       "Kokoroko",
       "Macy Gray",
-      "Gnarls Barkley"
+      "Gnarls Barkley",
+      "Pat Ballard",
+      "Irving Berlin",
+      "Frank Sinatra",
+      "Shelton Brooks",
+      "Ray Henderson"
+    ],
+    "canzoni": [
+      "Traditional - Brazil"
     ]
   },
   "Reggae & ska": {
@@ -276,7 +299,6 @@
   },
   "Surf": {
     "artisti": [
-      "Dick Dale",
       "Link Wray",
       "The Surfaris",
       "The Lively Ones",
@@ -284,19 +306,27 @@
       "The Centurions",
       "The shadows",
       "The 5678",
-      "Tito & Tarantula"
+      "Tito & Tarantula",
+      "The Ventures"
+    ],
+    "canzoni": [
+      "Traditional - Misirlou"
     ]
   },
   "Videogiochi": {
     "artisti": [
       "Monkey island",
       "Fzero",
-      "Sunset Riders",
       "Street Fighter",
       "Mortal Kombat",
-      "Doom",
-      "Diablo",
       "The Legend of Zelda"
+    ],
+    "canzoni": [
+      "Theme - Diablo 2 - Tristram town",
+      "Theme - Doom",
+      "Theme - Sunset riders",
+      "Theme - Super Mario Bros",
+      "Theme - Super Mario_yt"
     ]
   },
   "Cinema & TV": {
@@ -305,14 +335,22 @@
       "Ennio Morricone",
       "MacGyver",
       "Scrubs",
-      "SpongeBob",
       "BoJack Horseman",
       "The Hobbit",
       "The Hitchhiker's Guide to the Galaxy",
       "The Last of the Mohicans",
-      "Eric Weissberg",
       "Feebles",
-      "Stanlio & Ollio"
+      "Stanlio & Ollio",
+      "Deliverance",
+      "Roger Miller",
+      "Michael Nyman",
+      "Yann Tiersen"
+    ],
+    "canzoni": [
+      "Theme - Spongebob outro",
+      "Theme - Batman",
+      "Theme - Family Guy",
+      "Monty Python theme"
     ]
   },
   "Anni '80": {
@@ -362,7 +400,10 @@
       "Tori Amos",
       "Tove Lo",
       "Walk off the earth",
-      "Woodkid"
+      "Woodkid",
+      "Patrick Hernandez",
+      "Maze Dream",
+      "Axis of Awesome"
     ],
     "canzoni": [
       "Hunters of stars"
@@ -375,7 +416,6 @@
       "Angelo Branduardi",
       "Paolo Conte",
       "Giorgio Gaber",
-      "Francesco Guccini",
       "Jannacci",
       "Stefano Rosso",
       "Cesare Cremonini",
@@ -405,7 +445,8 @@
       "PTN",
       "Velvet",
       "La Casbah",
-      "Loretta Goggi"
+      "Loretta Goggi",
+      "CSI"
     ],
     "canzoni": [
       "Hai messo incinta una scema",
