@@ -80,6 +80,11 @@ if errorlevel 1 (
 
 echo.
 echo  [3/4] Salvo le modifiche...
+rem Windows non distingue maiuscole e minuscole: se un file cambia solo di
+rem maiuscole (es. "Grateful Dead" -> "Grateful dead") Git non se ne accorge e il
+rem sito non lo trova piu'. Si toglie dall'indice tutto songs/ e canzonieri/ e si
+rem riaggiunge: Git riprende i nomi esatti dei file sul disco.
+git rm -r -q --cached songs canzonieri >nul 2>nul
 git add -A
 git diff --cached --quiet
 if not errorlevel 1 (

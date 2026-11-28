@@ -1,4 +1,5 @@
-# Controlla la modalità "A capo" su tutte le canzoni a ogni modifica
+# A ogni modifica: ogni canzone in elenco ha il suo file (nome esatto) e la
+# modalità "A capo" non sposta gli accordi
 name: Test
 on:
   push:
@@ -11,4 +12,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: node tools/test_files.js
       - run: node tools/test_reflow.js
