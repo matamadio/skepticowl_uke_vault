@@ -93,12 +93,12 @@ def fold(s):
 # ---------- Accordi ----------
 # Un accordo e' una parola isolata (tra spazi) oppure tra parentesi quadre [Am].
 SUFFIX = (
-    r"(?:maj|min|m|M|dim|aug|sus|add|\+|°|ø)?"     # qualita'
+    r"(?:maj|min|m|M|dim|aug|sus|add|\+|°|ø|-(?!\d))?"     # qualita' ("-" = minore: RE-)
     r"(?:\d{1,2})?"                                 # 7, 9, 11, 13, 5, 6...
     r"(?:(?:maj|sus|add|aug|dim|b|#|\+)\d{0,2}|-\d{1,2})*"
     r"(?:\([^)\s]{1,8}\))?")                         # (b9), (add9)...
 ROOT_EN = r"[A-G](?:#|b)?"
-ROOT_IT = r"(?:Do|Re|Mi|Fa|Sol|La|Si)(?:#|b)?"    # notazione italiana
+ROOT_IT = r"(?:Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI)(?:#|b)?"    # notazione italiana (Sol o SOL)
 CHORD = re.compile(ROOT_EN + SUFFIX + r"(?:/" + ROOT_EN + r")?")
 CHORD_IT = re.compile(ROOT_IT + SUFFIX + r"(?:/" + ROOT_IT + r")?")
 BRACKETED = re.compile(r"\[([^\]\s]{1,16})\]")
@@ -108,6 +108,11 @@ SHAPE = re.compile(r"(?:^|[\s(,;])(" + CHORD.pattern + r")[ \t]*[:=]?[ \t]*\(?([
 # Parole isolate ambigue: accordo solo se la riga e' fatta (quasi) solo di accordi
 AMBIGUOUS = {"A", "E"}
 NOISE = re.compile(r"^(?:x\d+|\d+x|[-|/.:%*]+|\(?x?\d+\)?|n\.?c\.?|\d{4})$", re.I)
+
+
+def lalala(tokens):
+    """ "LA LA LA LA", "la la la": è testo, non una riga di accordi."""
+    return len(tokens) >= 3 and len(set(tokens)) == 1 and bool(CHORD_IT.fullmatch(tokens[0]))
 
 
 def find_chords(text):
@@ -130,13 +135,13 @@ def find_chords(text):
             continue
         chords = [t for t in tokens if CHORD.fullmatch(t)]
         ita = [t for t in tokens if CHORD_IT.fullmatch(t)]
-        chord_line = len(chords) + len(ita) >= 0.6 * len(tokens)
+        chord_line = len(chords) + len(ita) >= 0.6 * len(tokens) and not lalala(tokens)
         if chord_line:  # Do, Re, La... sono anche parole: solo nelle righe di accordi
             chords = [t for t in tokens if t in chords or t in ita]
         for c in chords:
             if chord_line:
                 found.setdefault(c, len(found))
-            elif c not in AMBIGUOUS and len(c) > 1:
+            elif c not in AMBIGUOUS and len(c) > 1 and not c.endswith('-'):  # "A-" nel testo: un trattino, non La minore
                 # parola isolata dentro il testo (es. "... la luna Am ...")
                 found.setdefault(c, len(found))
                 doubtful.add(c)
@@ -287,8 +292,8 @@ def load_config(path):
 
 
 def collect(source, recursive, sections):
-    """I .txt della cartella principale e delle sezioni (non delle loro
-    sottocartelle); con recursive tutti."""
+    """I .txt e i .pdf della cartella principale e delle sezioni (non delle
+    loro sottocartelle); con recursive tutti."""
     sections = {d.casefold() for d in sections}
     found, ignored, skipped_dirs = [], collections.Counter(), []
     for root, dirs, files in os.walk(source):
@@ -303,7 +308,7 @@ def collect(source, recursive, sections):
             ext = os.path.splitext(name)[1].lower()
             if name.startswith("_"):
                 ignored["file che iniziano con _"] += 1
-            elif ext == ".txt" and not name.startswith("."):
+            elif ext in (".txt", ".pdf") and not name.startswith("."):
                 found.append(os.path.join(root, name))
             else:
                 ignored[ext or "(senza estensione)"] += 1
@@ -418,8 +423,38 @@ def main(argv=None):
     chord_doubts = collections.defaultdict(list)
     instrumental = {}
     tags = load_tags(os.path.join(out, "tags.json"))
+    pdf_songs, pdf_big = [], []
     for src in files:
         rel = os.path.relpath(src, source).replace(os.sep, "/")
+        if rel.lower().endswith(".pdf"):
+            # spartito in PDF: si copia così com'è e compare nell'elenco con le canzoni
+            size = os.path.getsize(src)
+            if size > 95 * 1024 * 1024:  # GitHub rifiuta i file oltre 100 MB
+                pdf_big.append(rel)
+                continue
+            dst = os.path.join(songs_dir, *rel.split("/"))
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copyfile(src, dst)
+            sid = song_id(rel)
+            if sid in ids:
+                sys.exit("Id duplicato per %s e %s" % (ids[sid], rel))
+            ids[sid] = rel
+            stem = os.path.splitext(rel.rpartition("/")[2])[0]
+            artist, title = split_name(stem)
+            artist = aliases.get(artist_key(clean_artist(artist) or song_artists.get(fold(stem.strip()), "")),
+                                 clean_artist(artist) or song_artists.get(fold(stem.strip()), ""))
+            instrumental[sid] = False
+            mtime = datetime.datetime.fromtimestamp(os.stat(src).st_mtime, datetime.timezone.utc)
+            songs.append({
+                "id": sid, "artist": artist, "title": title, "folder": rel.rpartition("/")[0], "path": rel,
+                "mtime": mtime.strftime("%Y-%m-%dT%H:%M:%SZ"), "h": file_hash(src), "text": "", "chords": [],
+                "pdf": True, "size": size,
+            })
+            yt = videos.get(fold(stem.strip()))
+            if yt:
+                songs[-1]["yt"] = yt
+            pdf_songs.append(size)
+            continue
         with open(src, "rb") as f:
             text, enc = decode(f.read())
         encodings[enc] += 1
@@ -506,6 +541,10 @@ def main(argv=None):
 
     # Riepilogo
     print("Canzoni: %d (in %s)" % (len(songs), songs_dir))
+    if pdf_songs or pdf_big:
+        print("  di cui PDF: %d, %.1f MB" % (len(pdf_songs), sum(pdf_songs) / 1048576))
+    if pdf_big:
+        print("  ATTENZIONE, PDF oltre 95 MB non copiati (GitHub li rifiuta): " + ", ".join(pdf_big))
     print("Codifiche: " + ", ".join("%s %d" % kv for kv in encodings.most_common()))
     folders = collections.Counter(s["folder"] or "(principale)" for s in songs)
     print("Cartelle: " + ", ".join("%s %d" % kv for kv in sorted(folders.items())))
@@ -574,7 +613,7 @@ def main(argv=None):
             f.write("  %s: %s\n" % (c, ", ".join(sorted(chord_doubts[c]))))
         f.write("\nCanzoni senza accordi riconosciuti\n\n")
         for s in songs:
-            if not s["chords"]:
+            if not s["chords"] and not s.get("pdf"):
                 f.write("  %s\n" % s["path"])
     print("  rapporto completo: %s" % report)
     print("\nVersione: %s" % version)

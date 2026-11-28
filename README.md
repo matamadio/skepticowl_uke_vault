@@ -55,7 +55,12 @@ Serve Python 3.9 o più recente (solo libreria standard) e Git.
      pagina *Canzonieri*, tranne quelli esclusi in `config.json`;
    - esclude sempre i file il cui nome inizia con `_` (`.txt` e PDF): è il
      modo più rapido per nascondere una canzone o un canzoniere;
-   - ignora tutto ciò che non è `.txt` (pdf, docx, gp5, midi, immagini, `.lnk`);
+   - mette nell'elenco anche gli **spartiti in PDF** della cartella `Uke` (e
+     di `cazzate`): stesso nome `Artista - Titolo.pdf`, stessi artisti, tag e
+     video dei `.txt`, con l'etichetta *PDF*. Su PC il PDF si vede dentro la
+     pagina, sul telefono con il pulsante *Apri il PDF*. Restano offline dopo
+     la prima apertura. I PDF oltre 95 MB vengono saltati (GitHub li rifiuta);
+   - ignora tutto ciò che non è `.txt` o `.pdf` (pdf, docx, gp5, midi, immagini, `.lnk`);
    - riconosce la codifica (UTF-16 con BOM, UTF-8 con o senza BOM,
      altrimenti cp1252) e salva tutto in UTF-8; spazi e tab restano identici,
      cambia solo il fine riga (CRLF → LF);

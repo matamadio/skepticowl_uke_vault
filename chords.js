@@ -2,7 +2,8 @@
    disegno SVG e trasposizione dei nomi. */
 (function (root) {
   'use strict';
-  var NOTES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11, Do: 0, Re: 2, Mi: 4, Fa: 5, Sol: 7, La: 9, Si: 11 };
+  var NOTES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11, Do: 0, Re: 2, Mi: 4, Fa: 5, Sol: 7, La: 9, Si: 11,
+    DO: 0, RE: 2, MI: 4, FA: 5, SOL: 7, LA: 9, SI: 11 }; // notazione italiana anche in maiuscolo
   var STRINGS = [7, 0, 4, 9]; // G C E A (corde a vuoto, dall'alto)
 
   // Diteggiature "da manuale" per gli accordi più comuni; per gli altri si calcola.
@@ -42,7 +43,7 @@
   var PC_NAME = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
   function parse(name) {
-    var m = /^(Do|Re|Mi|Fa|Sol|La|Si|[A-G])(#|b)?(.*?)(?:\/(Do|Re|Mi|Fa|Sol|La|Si|[A-G])(#|b)?)?$/.exec(name);
+    var m = /^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])(#|b)?(.*?)(?:\/(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])(#|b)?)?$/.exec(name);
     if (!m) return null;
     var rootPc = (NOTES[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? 11 : 0)) % 12;
     var q = m[3].replace(/[()]/g, '');
@@ -253,7 +254,7 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   // "Bb" -> "A#", "Lam" -> "Am" (per cercare nella tabella)
   function canonical(name) {
-    var m = /^(Do|Re|Mi|Fa|Sol|La|Si|[A-G])(#|b)?(.*)$/.exec(name);
+    var m = /^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])(#|b)?(.*)$/.exec(name);
     if (!m || /\//.test(name)) return null;
     var pc = (NOTES[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? 11 : 0)) % 12;
     var q = m[3].replace(/^min(?!or)/, 'm').replace(/^M7$/, 'maj7').replace(/^-$/, 'm');
@@ -264,12 +265,14 @@
   // Bemolle per Bb, Eb, Ab, Db (come si scrivono di solito), diesis per gli altri.
   var OUT_EN = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
   var OUT_IT = ['Do', 'Do#', 'Re', 'Mib', 'Mi', 'Fa', 'Fa#', 'Sol', 'Lab', 'La', 'Sib', 'Si'];
+  var OUT_IT_CAPS = ['DO', 'DO#', 'RE', 'MIb', 'MI', 'FA', 'FA#', 'SOL', 'LAb', 'LA', 'SIb', 'SI'];
   function transpose(name, n) {
     n = ((n % 12) + 12) % 12;
     if (!n) return name;
-    var m = /^(Do|Re|Mi|Fa|Sol|La|Si|[A-G])(#|b)?(.*?)(?:\/(Do|Re|Mi|Fa|Sol|La|Si|[A-G])(#|b)?)?$/.exec(name);
+    var m = /^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])(#|b)?(.*?)(?:\/(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])(#|b)?)?$/.exec(name);
     if (!m) return name;
-    var it = m[1].length > 1, OUT = it ? OUT_IT : OUT_EN;
+    var it = m[1].length > 1, caps = it && m[1] === m[1].toUpperCase();
+    var OUT = it ? (caps ? OUT_IT_CAPS : OUT_IT) : OUT_EN;
     function shift(root, acc) {
       return OUT[(NOTES[root] + (acc === '#' ? 1 : acc === 'b' ? 11 : 0) + n) % 12];
     }

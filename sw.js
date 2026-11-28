@@ -87,6 +87,7 @@ function precache(urls, report) {
       var have = new Set();
       return Promise.all(keys.map(function (k) {
         if (wanted.has(k.url)) { have.add(k.url); return null; }
+        if (/\.pdf(\?|$)/i.test(k.url)) return null; // spartiti PDF aperti: restano per l'offline
         return c.delete(k);
       })).then(function () {
         var todo = urls.filter(function (u) { return !have.has(u); });

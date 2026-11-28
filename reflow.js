@@ -14,9 +14,9 @@
 (function (root) {
   'use strict';
 
-  var SUFFIX = '(?:maj|min|m|M|dim|aug|sus|add|\\+|°|ø)?(?:\\d{1,2})?' +
+  var SUFFIX = '(?:maj|min|m|M|dim|aug|sus|add|\\+|°|ø|-(?!\\d))?(?:\\d{1,2})?' +
     '(?:(?:maj|sus|add|aug|dim|b|#|\\+)\\d{0,2}|-\\d{1,2})*(?:\\([^)\\s]{1,8}\\))?';
-  var EN = '[A-G](?:#|b)?', IT = '(?:Do|Re|Mi|Fa|Sol|La|Si)(?:#|b)?';
+  var EN = '[A-G](?:#|b)?', IT = '(?:Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI)(?:#|b)?';
   var CHORD_EN = new RegExp('^' + EN + SUFFIX + '(?:/' + EN + ')?$');
   var CHORD_IT = new RegExp('^' + IT + SUFFIX + '(?:/' + IT + ')?$');
   var TAB_LINE = /^\s*[A-Ga-g][#b]?\s*[|:]?-*[|:]?[-0-9hpbr\/\\~x|]{4,}/;
@@ -48,7 +48,9 @@
     }).filter(function (t) { return t && !NOISE.test(t); });
     if (!toks.length) return 'text';
     var n = toks.filter(function (t) { return CHORD_EN.test(t) || CHORD_IT.test(t); }).length;
-    return n >= 0.6 * toks.length ? 'chord' : 'text';
+    // "LA LA LA LA" è testo, non una riga di accordi
+    var lalala = toks.length >= 3 && toks.every(function (t) { return t === toks[0]; }) && CHORD_IT.test(toks[0]);
+    return n >= 0.6 * toks.length && !lalala ? 'chord' : 'text';
   }
 
   // Riga di accordi + riga di testo -> [[accordi, testo], ...]

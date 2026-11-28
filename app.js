@@ -712,7 +712,8 @@
     return '<div class="song">' +
       '<button class="star' + (fav ? ' on' : '') + '" type="button" data-fav="' + s.id + '" aria-pressed="' + fav +
       '" aria-label="Preferito">' + (fav ? '★' : '☆') + '</button>' +
-      '<a href="#/song/' + s.id + '" data-open="' + s.id + '"><span class="t">' + escapeHtml(s.title) + '</span>' +
+      '<a href="#/song/' + s.id + '" data-open="' + s.id + '"><span class="t">' +
+      (s.pdf ? '<span class="pdftag">PDF</span>' : '') + escapeHtml(s.title) + '</span>' +
       (m.length ? '<span class="m">' + m.join(' · ') + '</span>' : '') + '</a></div>';
   }
 
@@ -889,6 +890,8 @@
       els.vArtist.textContent = '';
       $('ytBox').innerHTML = '';
       $('localBar').hidden = true;
+      $('pdfBox').hidden = true;
+      $('viewer').classList.remove('ispdf');
       showMessage('Questa canzone non esiste più (forse è stata rinominata).');
       return;
     }
@@ -908,6 +911,9 @@
 
     var token = ++loadToken;
     renderLocalBar(s);
+    $('viewer').classList.toggle('ispdf', !!s.pdf);
+    $('pdfBox').hidden = !s.pdf;
+    if (s.pdf) { showPdf(s); return; }
     (s.local ? Promise.resolve(s.raw) : fetch(songUrl(s)).then(function (r) {
       if (!r.ok) throw new Error(r.status);
       return r.text();
@@ -979,7 +985,7 @@
   // ambigue (A, E, notazione italiana) solo nelle righe fatte di accordi.
   var TAB_RE = /^\s*[A-Ga-g][#b]?\s*[|:]?-*[|:]?[-0-9hpbr\/\\~x|]{4,}/;
   var NOISE_RE = /^(?:x\d+|\d+x|[-|\/.:%*]+|\(?x?\d+\)?|n\.?c\.?|\d{4})$/i;
-  var ITA_RE = /^(Do|Re|Mi|Fa|Sol|La|Si)/;
+  var ITA_RE = /^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI)/;
   // plain: restituisce testo semplice (trasposto) invece di HTML
   function markChords(text, chords, shift, plain) {
     var esc = plain ? function (s) { return s; } : escapeHtml;
@@ -994,7 +1000,7 @@
         return t && !NOISE_RE.test(t);
       });
       var hits = toks.filter(function (t) { return set[t] || set[t.replace(/^[(\[]+|[)\],;!?.]+$/g, '')]; }).length;
-      var chordLine = toks.length && hits >= 0.6 * toks.length;
+      var chordLine = toks.length && hits >= 0.6 * toks.length && !lalala(toks);
       // pezzi: [Accordo] | spazi | parola. Trasponendo, un accordo può
       // cambiare lunghezza (C -> C#): nelle righe di accordi lo spazio che
       // segue si accorcia o si allunga, così le colonne restano allineate.
@@ -1127,6 +1133,18 @@
       '?autoplay=1&rel=0" title="Video YouTube" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
     b.replaceWith(f);
   });
+
+  // ---------- Spartiti in PDF ----------
+  // Su PC il PDF si vede dentro la pagina; sui telefoni (dove i browser non
+  // mostrano i PDF incorporati) c'è il pulsante per aprirlo.
+  function showPdf(s) {
+    var url = songUrl(s), box = $('pdfBox');
+    els.text.className = 'msg';
+    els.text.textContent = '';
+    box.innerHTML = '<p class="pdfinfo"><span class="pdftag">PDF</span> Spartito in PDF · ' + formatSize(s.size || 0) + '</p>' +
+      '<p><a class="primary pdfopen" href="' + url + '" target="_blank" rel="noopener">Apri il PDF &#8599;</a></p>' +
+      (isMobile() ? '' : '<iframe class="pdfframe" src="' + url + '" title="' + escapeHtml(s.title) + '"></iframe>');
+  }
 
   // ---------- Scorrimento automatico ----------
   var scrolling = false, lastT = 0, carry = 0, rafId = 0;
@@ -1302,7 +1320,8 @@
       if (reg.active && songs.length) {
         reg.active.postMessage({
           type: 'precache',
-          urls: songs.map(function (s) { return new URL(songUrl(s), location.href).href; })
+          // i PDF si salvano per l'offline solo quando si aprono (possono essere pesanti)
+          urls: songs.filter(function (s) { return !s.pdf; }).map(function (s) { return new URL(songUrl(s), location.href).href; })
         });
       }
     }).catch(function () { /* niente offline */ });
@@ -1488,12 +1507,16 @@
   // ---------- Canzoni importate (incollate da Ultimate Guitar o altro) ----------
   // Restano nel dispositivo (state.local) finché non si mette il .txt nella
   // cartella Uke e si rilancia il build.
-  var SUFFIX_RE = '(?:maj|min|m|M|dim|aug|sus|add|\\+|°|ø)?(?:\\d{1,2})?(?:(?:maj|sus|add|aug|dim|b|#|\\+)\\d{0,2}|-\\d{1,2})*(?:\\([^)\\s]{1,8}\\))?';
-  var EN_RE = '[A-G](?:#|b)?', IT_RE = '(?:Do|Re|Mi|Fa|Sol|La|Si)(?:#|b)?';
+  var SUFFIX_RE = '(?:maj|min|m|M|dim|aug|sus|add|\\+|°|ø|-(?!\\d))?(?:\\d{1,2})?(?:(?:maj|sus|add|aug|dim|b|#|\\+)\\d{0,2}|-\\d{1,2})*(?:\\([^)\\s]{1,8}\\))?';
+  var EN_RE = '[A-G](?:#|b)?', IT_RE = '(?:Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI)(?:#|b)?';
   var CHORD_EN_RE = new RegExp('^' + EN_RE + SUFFIX_RE + '(?:/' + EN_RE + ')?$');
   var CHORD_IT_RE = new RegExp('^' + IT_RE + SUFFIX_RE + '(?:/' + IT_RE + ')?$');
   var SHAPE_RE = new RegExp('(?:^|[\\s(,;])(' + EN_RE + SUFFIX_RE + '(?:/' + EN_RE + ')?)[ \\t]*[:=]?[ \\t]*\\(?([0-9xX]{4})\\)?(?=$|[\\s),;])', 'g');
 
+  // "LA LA LA LA": testo, non accordi (come lalala() in build.py)
+  function lalala(toks) {
+    return toks.length >= 3 && toks.every(function (t) { return t === toks[0]; }) && CHORD_IT_RE.test(toks[0]);
+  }
   // Stesse regole di build.py (find_chords)
   function findChords(text) {
     var found = [], shapes = {};
@@ -1510,9 +1533,9 @@
       if (!toks.length) return;
       var en = toks.filter(function (t) { return CHORD_EN_RE.test(t); });
       var it = toks.filter(function (t) { return CHORD_IT_RE.test(t); });
-      var chordLine = en.length + it.length >= 0.6 * toks.length;
+      var chordLine = en.length + it.length >= 0.6 * toks.length && !lalala(toks);
       (chordLine ? toks.filter(function (t) { return en.indexOf(t) !== -1 || it.indexOf(t) !== -1; }) : en).forEach(function (c) {
-        if (chordLine || (c !== 'A' && c !== 'E' && c.length > 1)) add(c);
+        if (chordLine || (c !== 'A' && c !== 'E' && c.length > 1 && c.slice(-1) !== '-')) add(c);
       });
     });
     return { chords: found, shapes: shapes };
