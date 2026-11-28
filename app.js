@@ -913,6 +913,7 @@
     renderLocalBar(s);
     $('viewer').classList.toggle('ispdf', !!s.pdf);
     $('pdfBox').hidden = !s.pdf;
+    closePdf();
     if (s.pdf) { showPdf(s); return; }
     (s.local ? Promise.resolve(s.raw) : fetch(songUrl(s)).then(function (r) {
       if (!r.ok) throw new Error(r.status);
@@ -932,6 +933,7 @@
 
   function showList() {
     stopScroll();
+    closePdf();
     $('ytBox').innerHTML = ''; // ferma un eventuale video in riproduzione
     releaseWakeLock();
     current = null;
@@ -1135,15 +1137,88 @@
   });
 
   // ---------- Spartiti in PDF ----------
-  // Su PC il PDF si vede dentro la pagina; sui telefoni (dove i browser non
-  // mostrano i PDF incorporati) c'è il pulsante per aprirlo.
+  // Le pagine si disegnano direttamente nella pagina della canzone con PDF.js
+  // (vendor/pdfjs, caricato solo al primo PDF), anche sui telefoni che non
+  // sanno mostrare un PDF incorporato. Ogni pagina si disegna quando sta per
+  // entrare nello schermo. Se qualcosa va storto resta il pulsante per aprirlo.
+  var pdfLibPromise = null, pdfDoc = null, pdfObserver = null;
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (!pdfLibPromise) {
+      pdfLibPromise = new Promise(function (ok, ko) {
+        var sc = document.createElement('script');
+        sc.src = 'vendor/pdfjs/pdf.min.js';
+        sc.onload = function () {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
+          ok(window.pdfjsLib);
+        };
+        sc.onerror = function () { pdfLibPromise = null; ko(new Error('PDF.js non caricato')); };
+        document.head.appendChild(sc);
+      });
+    }
+    return pdfLibPromise;
+  }
+  function closePdf() {
+    if (pdfObserver) { pdfObserver.disconnect(); pdfObserver = null; }
+    if (pdfDoc) { pdfDoc.destroy(); pdfDoc = null; }
+  }
   function showPdf(s) {
-    var url = songUrl(s), box = $('pdfBox');
+    var url = songUrl(s), box = $('pdfBox'), token = loadToken;
+    closePdf();
     els.text.className = 'msg';
     els.text.textContent = '';
-    box.innerHTML = '<p class="pdfinfo"><span class="pdftag">PDF</span> Spartito in PDF · ' + formatSize(s.size || 0) + '</p>' +
-      '<p><a class="primary pdfopen" href="' + url + '" target="_blank" rel="noopener">Apri il PDF &#8599;</a></p>' +
-      (isMobile() ? '' : '<iframe class="pdfframe" src="' + url + '" title="' + escapeHtml(s.title) + '"></iframe>');
+    box.innerHTML = '<p class="pdfinfo"><span class="pdftag">PDF</span> ' + formatSize(s.size || 0) +
+      ' · <a href="' + url + '" target="_blank" rel="noopener">apri a parte &#8599;</a></p>' +
+      '<div id="pdfPages" class="pdfpages"><p class="muted">Caricamento del PDF…</p></div>';
+    loadPdfJs().then(function (lib) {
+      return lib.getDocument({ url: url }).promise;
+    }).then(function (doc) {
+      if (token !== loadToken) { doc.destroy(); return; }
+      pdfDoc = doc;
+      return doc.getPage(1).then(function (p1) {
+        var v = p1.getViewport({ scale: 1 }), wrap = $('pdfPages');
+        wrap.innerHTML = '';
+        wrap.style.setProperty('--ratio', String(v.height / v.width));
+        for (var n = 1; n <= doc.numPages; n++) {
+          var div = document.createElement('div');
+          div.className = 'pdfpage';
+          div.setAttribute('data-page', n);
+          div.setAttribute('aria-label', 'Pagina ' + n + ' di ' + doc.numPages);
+          wrap.appendChild(div);
+        }
+        observePdfPages(wrap);
+      });
+    }).catch(function () {
+      if (token !== loadToken) return;
+      var wrap = $('pdfPages');
+      if (wrap) wrap.innerHTML = '<p class="muted">Non riesco a mostrare il PDF qui.</p>' +
+        '<p><a class="primary pdfopen" href="' + url + '" target="_blank" rel="noopener">Apri il PDF &#8599;</a></p>';
+    });
+  }
+  function renderPdfPage(div, wrap) {
+    if (!pdfDoc || div.getAttribute('data-done')) return;
+    div.setAttribute('data-done', '1');
+    var doc = pdfDoc;
+    doc.getPage(Number(div.getAttribute('data-page'))).then(function (page) {
+      if (doc !== pdfDoc) return;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var v1 = page.getViewport({ scale: 1 });
+      var vp = page.getViewport({ scale: (wrap.clientWidth || v1.width) / v1.width * dpr });
+      var c = document.createElement('canvas');
+      c.width = Math.floor(vp.width);
+      c.height = Math.floor(vp.height);
+      div.style.setProperty('--ratio', String(v1.height / v1.width));
+      div.appendChild(c);
+      return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    }).catch(function () { /* pagina non disegnabile: resta vuota */ });
+  }
+  function observePdfPages(wrap) {
+    var pages = Array.prototype.slice.call(wrap.querySelectorAll('.pdfpage'));
+    if (!('IntersectionObserver' in window)) { pages.forEach(function (d) { renderPdfPage(d, wrap); }); return; }
+    pdfObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) renderPdfPage(e.target, wrap); });
+    }, { rootMargin: '800px 0px' });
+    pages.forEach(function (d) { pdfObserver.observe(d); });
   }
 
   // ---------- Scorrimento automatico ----------
