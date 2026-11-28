@@ -93,12 +93,12 @@ def fold(s):
 # ---------- Accordi ----------
 # Un accordo e' una parola isolata (tra spazi) oppure tra parentesi quadre [Am].
 SUFFIX = (
-    r"(?:maj|min|m|M|dim|aug|sus|add|\+|°|ø)?"     # qualita'
+    r"(?:maj|min|m|M|dim|aug|sus|add|\+|°|ø|-(?!\d))?"     # qualita' ("-" = minore: RE-)
     r"(?:\d{1,2})?"                                 # 7, 9, 11, 13, 5, 6...
     r"(?:(?:maj|sus|add|aug|dim|b|#|\+)\d{0,2}|-\d{1,2})*"
     r"(?:\([^)\s]{1,8}\))?")                         # (b9), (add9)...
 ROOT_EN = r"[A-G](?:#|b)?"
-ROOT_IT = r"(?:Do|Re|Mi|Fa|Sol|La|Si)(?:#|b)?"    # notazione italiana
+ROOT_IT = r"(?:Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI)(?:#|b)?"    # notazione italiana (Sol o SOL)
 CHORD = re.compile(ROOT_EN + SUFFIX + r"(?:/" + ROOT_EN + r")?")
 CHORD_IT = re.compile(ROOT_IT + SUFFIX + r"(?:/" + ROOT_IT + r")?")
 BRACKETED = re.compile(r"\[([^\]\s]{1,16})\]")
@@ -108,6 +108,11 @@ SHAPE = re.compile(r"(?:^|[\s(,;])(" + CHORD.pattern + r")[ \t]*[:=]?[ \t]*\(?([
 # Parole isolate ambigue: accordo solo se la riga e' fatta (quasi) solo di accordi
 AMBIGUOUS = {"A", "E"}
 NOISE = re.compile(r"^(?:x\d+|\d+x|[-|/.:%*]+|\(?x?\d+\)?|n\.?c\.?|\d{4})$", re.I)
+
+
+def lalala(tokens):
+    """ "LA LA LA LA", "la la la": è testo, non una riga di accordi."""
+    return len(tokens) >= 3 and len(set(tokens)) == 1 and bool(CHORD_IT.fullmatch(tokens[0]))
 
 
 def find_chords(text):
@@ -130,13 +135,13 @@ def find_chords(text):
             continue
         chords = [t for t in tokens if CHORD.fullmatch(t)]
         ita = [t for t in tokens if CHORD_IT.fullmatch(t)]
-        chord_line = len(chords) + len(ita) >= 0.6 * len(tokens)
+        chord_line = len(chords) + len(ita) >= 0.6 * len(tokens) and not lalala(tokens)
         if chord_line:  # Do, Re, La... sono anche parole: solo nelle righe di accordi
             chords = [t for t in tokens if t in chords or t in ita]
         for c in chords:
             if chord_line:
                 found.setdefault(c, len(found))
-            elif c not in AMBIGUOUS and len(c) > 1:
+            elif c not in AMBIGUOUS and len(c) > 1 and not c.endswith('-'):  # "A-" nel testo: un trattino, non La minore
                 # parola isolata dentro il testo (es. "... la luna Am ...")
                 found.setdefault(c, len(found))
                 doubtful.add(c)

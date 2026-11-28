@@ -979,7 +979,7 @@
   // ambigue (A, E, notazione italiana) solo nelle righe fatte di accordi.
   var TAB_RE = /^\s*[A-Ga-g][#b]?\s*[|:]?-*[|:]?[-0-9hpbr\/\\~x|]{4,}/;
   var NOISE_RE = /^(?:x\d+|\d+x|[-|\/.:%*]+|\(?x?\d+\)?|n\.?c\.?|\d{4})$/i;
-  var ITA_RE = /^(Do|Re|Mi|Fa|Sol|La|Si)/;
+  var ITA_RE = /^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI)/;
   // plain: restituisce testo semplice (trasposto) invece di HTML
   function markChords(text, chords, shift, plain) {
     var esc = plain ? function (s) { return s; } : escapeHtml;
@@ -994,7 +994,7 @@
         return t && !NOISE_RE.test(t);
       });
       var hits = toks.filter(function (t) { return set[t] || set[t.replace(/^[(\[]+|[)\],;!?.]+$/g, '')]; }).length;
-      var chordLine = toks.length && hits >= 0.6 * toks.length;
+      var chordLine = toks.length && hits >= 0.6 * toks.length && !lalala(toks);
       // pezzi: [Accordo] | spazi | parola. Trasponendo, un accordo può
       // cambiare lunghezza (C -> C#): nelle righe di accordi lo spazio che
       // segue si accorcia o si allunga, così le colonne restano allineate.
@@ -1488,12 +1488,16 @@
   // ---------- Canzoni importate (incollate da Ultimate Guitar o altro) ----------
   // Restano nel dispositivo (state.local) finché non si mette il .txt nella
   // cartella Uke e si rilancia il build.
-  var SUFFIX_RE = '(?:maj|min|m|M|dim|aug|sus|add|\\+|°|ø)?(?:\\d{1,2})?(?:(?:maj|sus|add|aug|dim|b|#|\\+)\\d{0,2}|-\\d{1,2})*(?:\\([^)\\s]{1,8}\\))?';
-  var EN_RE = '[A-G](?:#|b)?', IT_RE = '(?:Do|Re|Mi|Fa|Sol|La|Si)(?:#|b)?';
+  var SUFFIX_RE = '(?:maj|min|m|M|dim|aug|sus|add|\\+|°|ø|-(?!\\d))?(?:\\d{1,2})?(?:(?:maj|sus|add|aug|dim|b|#|\\+)\\d{0,2}|-\\d{1,2})*(?:\\([^)\\s]{1,8}\\))?';
+  var EN_RE = '[A-G](?:#|b)?', IT_RE = '(?:Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI)(?:#|b)?';
   var CHORD_EN_RE = new RegExp('^' + EN_RE + SUFFIX_RE + '(?:/' + EN_RE + ')?$');
   var CHORD_IT_RE = new RegExp('^' + IT_RE + SUFFIX_RE + '(?:/' + IT_RE + ')?$');
   var SHAPE_RE = new RegExp('(?:^|[\\s(,;])(' + EN_RE + SUFFIX_RE + '(?:/' + EN_RE + ')?)[ \\t]*[:=]?[ \\t]*\\(?([0-9xX]{4})\\)?(?=$|[\\s),;])', 'g');
 
+  // "LA LA LA LA": testo, non accordi (come lalala() in build.py)
+  function lalala(toks) {
+    return toks.length >= 3 && toks.every(function (t) { return t === toks[0]; }) && CHORD_IT_RE.test(toks[0]);
+  }
   // Stesse regole di build.py (find_chords)
   function findChords(text) {
     var found = [], shapes = {};
@@ -1510,9 +1514,9 @@
       if (!toks.length) return;
       var en = toks.filter(function (t) { return CHORD_EN_RE.test(t); });
       var it = toks.filter(function (t) { return CHORD_IT_RE.test(t); });
-      var chordLine = en.length + it.length >= 0.6 * toks.length;
+      var chordLine = en.length + it.length >= 0.6 * toks.length && !lalala(toks);
       (chordLine ? toks.filter(function (t) { return en.indexOf(t) !== -1 || it.indexOf(t) !== -1; }) : en).forEach(function (c) {
-        if (chordLine || (c !== 'A' && c !== 'E' && c.length > 1)) add(c);
+        if (chordLine || (c !== 'A' && c !== 'E' && c.length > 1 && c.slice(-1) !== '-')) add(c);
       });
     });
     return { chords: found, shapes: shapes };
